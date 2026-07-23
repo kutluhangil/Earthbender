@@ -15,6 +15,7 @@ import SearchBox from '@/components/hud/SearchBox'
 import DetailPanel from '@/components/hud/DetailPanel'
 import type { Telemetry } from '@/components/hud/DetailPanel'
 import PlanetInfoCard from '@/components/hud/PlanetInfoCard'
+import CinematicTitleOverlay from '@/components/hud/CinematicTitleOverlay'
 import FallbackTable from '@/components/FallbackTable'
 
 const EARTH_R = 6371
@@ -449,6 +450,9 @@ export default function Home() {
         </div>
       )}
 
+      {/* Sci-Fi / Star Wars Arrival Title Overlay */}
+      <CinematicTitleOverlay bodyId={focusBody} />
+
       {degraded && (
         <div className="absolute bottom-[92px] right-4 z-20 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-[11px] text-amber-200">
           Live propagation degraded: {degraded}
@@ -471,18 +475,18 @@ export default function Home() {
 
       {status === 'loading' && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#04060a]">
-          <div className="font-mono text-xl font-semibold tracking-[0.34em] text-white">
-            <span className="logo-o">O</span>RBIT VEIL
+          <div className="font-mono text-xl font-bold tracking-[0.34em] text-white">
+            <span className="text-cyan-400">E</span>ARTHBENDER
           </div>
-          <div className="mt-6 h-7 w-7 animate-spin rounded-full border-2 border-sky-400/25 border-t-sky-300" />
-          <div className="mt-4 font-mono text-xs text-slate-500">Loading orbital data…</div>
+          <div className="mt-6 h-7 w-7 animate-spin rounded-full border-2 border-cyan-400/25 border-t-cyan-400" />
+          <div className="mt-4 font-mono text-xs text-slate-500">Initializing 3D Solar System & Orbitals…</div>
         </div>
       )}
 
       {status === 'error' && !dataset && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#04060a]">
-          <div className="font-mono text-xl font-semibold tracking-[0.34em] text-white">
-            <span className="logo-o">O</span>RBIT VEIL
+          <div className="font-mono text-xl font-bold tracking-[0.34em] text-white">
+            <span className="text-cyan-400">E</span>ARTHBENDER
           </div>
           <div className="mt-6 max-w-sm text-center text-sm text-rose-300">
             Failed to load orbital data{error ? `: ${error}` : '.'}

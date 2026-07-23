@@ -5,13 +5,13 @@ interface IdentityBlockProps {
 export default function IdentityBlock({ total }: IdentityBlockProps) {
   return (
     <div className="pointer-events-none select-none">
-      <h1 className="font-mono text-sm font-semibold tracking-[0.3em] text-slate-100 md:text-xl md:tracking-[0.34em]">
-        <span className="logo-o">O</span>RBIT VEIL
+      <h1 className="font-mono text-base font-bold tracking-[0.34em] text-slate-100 md:text-2xl md:tracking-[0.38em]">
+        <span className="inline-block text-cyan-400 drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]">E</span>ARTHBENDER
       </h1>
-      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-400 md:text-[11px] md:tracking-[0.18em]">
+      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-400 md:text-[11px] md:tracking-[0.2em]">
         <span className="md:hidden">{total.toLocaleString()} objects tracked</span>
         <span className="max-md:hidden">
-          {total.toLocaleString()} objects tracked · TLE @ CelesTrak
+          {total.toLocaleString()} objects tracked · 3D Solar System · CelesTrak TLE
         </span>
       </p>
     </div>
