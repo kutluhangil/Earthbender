@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 interface CelestialScaleSpec {
   id: string
@@ -179,10 +179,10 @@ const SORTED_BODIES: CelestialScaleSpec[] = [
     radiusKm: '2,410 km',
     ratioToEarth: 0.38,
     gravity: '1.24 m/s² (0.13g)',
-    climate: '-140°C, Valhalla Krater Halkaları',
-    atmosphere: 'İnce Karbondioksit İzleri',
+    climate: '-140°C, Kadim Kraterleşmiş Yüzey',
+    atmosphere: 'Karbondioksit İzleri',
     texture: 'callisto-4k.jpg',
-    funFact: 'Güneş Sistemi\'nin en çok kraterle kaplı antik buzlu yüzeyine sahiptir.',
+    funFact: 'Güneş Sistemi\'nin en yoğun kraterli yüzeyine sahiptir.',
   },
   {
     id: 'io',
@@ -193,10 +193,10 @@ const SORTED_BODIES: CelestialScaleSpec[] = [
     radiusKm: '1,821 km',
     ratioToEarth: 0.29,
     gravity: '1.79 m/s² (0.18g)',
-    climate: '-130°C, 400+ Aktif Lav Volkanı',
-    atmosphere: 'Kükürtdioksit (SO2)',
+    climate: '-130°C, 400+ Aktif Yanardağ',
+    atmosphere: 'Kükürtdioksit (%90)',
     texture: 'io-4k.jpg',
-    funFact: 'Jüpiter\'in kütleçekimsel gelgitleri yüzünden 400\'den fazla aktif yanardağa sahiptir.',
+    funFact: 'Güneş Sistemi\'nin en aktif volkanik gök cismidir; 400\'den fazla aktif volkanı vardır.',
   },
   {
     id: 'moon',
@@ -207,10 +207,10 @@ const SORTED_BODIES: CelestialScaleSpec[] = [
     radiusKm: '1,737 km',
     ratioToEarth: 0.27,
     gravity: '1.62 m/s² (0.17g)',
-    climate: '-130°C ile +120°C, Regolit',
-    atmosphere: 'İnce Egzozfer',
+    climate: '-130°C ile +120°C, Anortozit Kraterler',
+    atmosphere: 'Yok (Çok ince egzozfer)',
     texture: 'moon-8k.jpg',
-    funFact: 'Dünya\'ya kütleçekim kilitli olduğu için bize hep aynı yüzünü gösterir.',
+    funFact: 'İnsanoğlunun üzerine ayak bastığı Dünya dışındaki tek gök cismidir.',
   },
   {
     id: 'europa',
@@ -221,10 +221,10 @@ const SORTED_BODIES: CelestialScaleSpec[] = [
     radiusKm: '1,560 km',
     ratioToEarth: 0.25,
     gravity: '1.31 m/s² (0.13g)',
-    climate: '-160°C, Yeraltı Sıvı Okyanusu',
-    atmosphere: 'İnce Oksijen Egzozferi',
+    climate: '-160°C, Global Okyanus & Kabuk',
+    atmosphere: 'Seyrek Oksijen',
     texture: 'europa-4k.jpg',
-    funFact: 'Buz kabuğunun altında Dünya\'daki tüm okyanuslardan 2 kat fazla su barındırır.',
+    funFact: 'Pürüzsüz buz kabuğunun altında, Dünya\'daki tüm sudan 2 kat fazla sıvı okyanus barındırır.',
   },
   {
     id: 'triton',
@@ -236,37 +236,37 @@ const SORTED_BODIES: CelestialScaleSpec[] = [
     ratioToEarth: 0.21,
     gravity: '0.78 m/s² (0.08g)',
     climate: '-235°C, Azot Gayzerleri',
-    atmosphere: 'İnce Azot & Metan',
+    atmosphere: 'Azot & Metan İzleri',
     texture: 'triton-4k.jpg',
-    funFact: 'Neptün etrafında ters (retrograt) dönen tek büyük uydudur.',
+    funFact: 'Ters yönde dönen (retrograd) tek büyük uydudur; azot gayzerleri püskürtür.',
   },
   {
     id: 'pluto',
     name: 'Pluto',
     nameTr: 'Plüton',
-    emoji: '⚪',
+    emoji: '❄️',
     typeTr: 'Cüce Gezegen',
     radiusKm: '1,188 km',
-    ratioToEarth: 0.18,
+    ratioToEarth: 0.19,
     gravity: '0.62 m/s² (0.06g)',
-    climate: '-230°C, Azot Buzulları (Sputnik)',
-    atmosphere: 'Azot (%99), Metan',
+    climate: '-230°C, Azot & Karbonmonoksit Buzları',
+    atmosphere: 'Azot, Metan, Karbonmonoksit',
     texture: 'pluto-2k.jpg',
-    funFact: 'Yüzeyinde devasa bir buz kalp şekli (Sputnik Planitia) barındırır.',
+    funFact: 'Yüzeyinde devasa bir azot buzu kalbi (Sputnik Planitia) taşır.',
   },
   {
-    id: 'enceladus',
-    name: 'Enceladus',
-    nameTr: 'Enceladus',
-    emoji: '🧊',
-    typeTr: 'Satürn Uydusu',
-    radiusKm: '252 km',
-    ratioToEarth: 0.04,
-    gravity: '0.11 m/s² (0.01g)',
-    climate: '-200°C, Güney Kutbu Fıskiyeleri',
-    atmosphere: 'Su Buharı Gayzerleri',
-    texture: 'enceladus-4k.jpg',
-    funFact: 'Güney kutbundaki riftsel çatlaklardan uzaya dev su buharı fışkırtır.',
+    id: 'titania',
+    name: 'Titania',
+    nameTr: 'Titania',
+    emoji: '⚪',
+    typeTr: 'Uranüs Uydusu',
+    radiusKm: '788 km',
+    ratioToEarth: 0.12,
+    gravity: '0.37 m/s² (0.04g)',
+    climate: '-203°C, Devasa Kanyonlar',
+    atmosphere: 'Karbondioksit İzleri',
+    texture: 'titania-4k.jpg',
+    funFact: 'Uranüs\'ün en büyük uydusudur; devasa kanyon sistemleri barındırır.',
   },
 ]
 
@@ -276,6 +276,13 @@ interface ScaleSandboxModalProps {
 
 export default function ScaleSandboxModal({ onClose }: ScaleSandboxModalProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'planets' | 'moons'>('all')
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  const scrollContainer = (direction: 'left' | 'right') => {
+    if (!scrollRef.current) return
+    const offset = direction === 'left' ? -380 : 380
+    scrollRef.current.scrollBy({ left: offset, behavior: 'smooth' })
+  }
 
   const filtered = SORTED_BODIES.filter((b) => {
     if (activeTab === 'planets') return b.typeTr.includes('Gezegen') || b.typeTr.includes('Yıldız')
@@ -304,38 +311,58 @@ export default function ScaleSandboxModal({ onClose }: ScaleSandboxModalProps) {
           </button>
         </div>
 
-        {/* Tab Filters */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`px-3 py-1 rounded-md font-mono text-xs transition-all ${
-              activeTab === 'all'
-                ? 'border border-cyan-400/50 bg-cyan-400/20 text-cyan-200 font-bold'
-                : 'border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
-            }`}
-          >
-            Tüm Gök Cisimleri (18)
-          </button>
-          <button
-            onClick={() => setActiveTab('planets')}
-            className={`px-3 py-1 rounded-md font-mono text-xs transition-all ${
-              activeTab === 'planets'
-                ? 'border border-amber-400/50 bg-amber-400/20 text-amber-200 font-bold'
-                : 'border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
-            }`}
-          >
-            Gezegenler & Güneş (9)
-          </button>
-          <button
-            onClick={() => setActiveTab('moons')}
-            className={`px-3 py-1 rounded-md font-mono text-xs transition-all ${
-              activeTab === 'moons'
-                ? 'border border-indigo-400/50 bg-indigo-400/20 text-indigo-200 font-bold'
-                : 'border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
-            }`}
-          >
-            Uydular (9)
-          </button>
+        {/* Tab Filters + Scroll Controls */}
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-3 py-1 rounded-md font-mono text-xs transition-all ${
+                activeTab === 'all'
+                  ? 'border border-cyan-400/50 bg-cyan-400/20 text-cyan-200 font-bold'
+                  : 'border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+              }`}
+            >
+              Tüm Gök Cisimleri (18)
+            </button>
+            <button
+              onClick={() => setActiveTab('planets')}
+              className={`px-3 py-1 rounded-md font-mono text-xs transition-all ${
+                activeTab === 'planets'
+                  ? 'border border-amber-400/50 bg-amber-400/20 text-amber-200 font-bold'
+                  : 'border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+              }`}
+            >
+              Gezegenler & Güneş (9)
+            </button>
+            <button
+              onClick={() => setActiveTab('moons')}
+              className={`px-3 py-1 rounded-md font-mono text-xs transition-all ${
+                activeTab === 'moons'
+                  ? 'border border-indigo-400/50 bg-indigo-400/20 text-indigo-200 font-bold'
+                  : 'border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+              }`}
+            >
+              Uydular (9)
+            </button>
+          </div>
+
+          {/* Quick Scroll Left / Right Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => scrollContainer('left')}
+              className="flex items-center gap-1 px-3 py-1 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 text-xs font-mono font-bold transition-all shadow-[0_0_10px_rgba(6,182,212,0.15)]"
+              title="Sola Kaydır"
+            >
+              ◀ SOLA
+            </button>
+            <button
+              onClick={() => scrollContainer('right')}
+              className="flex items-center gap-1 px-3 py-1 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 text-xs font-mono font-bold transition-all shadow-[0_0_10px_rgba(6,182,212,0.15)]"
+              title="Sağa Kaydır"
+            >
+              SAĞA ▶
+            </button>
+          </div>
         </div>
 
         {/* Horizontal Side-by-Side Scrolling Cards Container (Büyükten Küçüğe Yan Yana) */}

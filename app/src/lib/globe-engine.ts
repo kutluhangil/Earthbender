@@ -1036,10 +1036,11 @@ export class GlobeEngine {
       mesh.add(ring)
     }
 
-    // Add historic landing sites to planet/moon surface
+    // Add historic landing sites to planet/moon surface (hidden by default to keep surfaces clean)
     const sites = LANDING_SITES.filter((s) => s.bodyId === def.id)
     if (sites.length > 0) {
       const landmarkGroup = new THREE.Group()
+      landmarkGroup.visible = false // Remove orange ring markers from planet surfaces
       const markTex = makeRingTexture()
       for (const s of sites) {
         const phi = (90 - s.lat) * (Math.PI / 180)
