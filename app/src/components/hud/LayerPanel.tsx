@@ -17,6 +17,8 @@ interface LayerPanelProps {
   probesVisible?: boolean
   onToggleConstellations?: () => void
   constellationsVisible?: boolean
+  onToggleAsteroids?: () => void
+  asteroidsVisible?: boolean
 }
 
 const PRIMARY_BODIES: { id: CelestialBodyId; name: string; emoji: string; activeClass: string }[] = [
@@ -40,6 +42,8 @@ export default function LayerPanel({
   probesVisible = false,
   onToggleConstellations,
   constellationsVisible = false,
+  onToggleAsteroids,
+  asteroidsVisible = false,
 }: LayerPanelProps) {
   const [showAllPlanets, setShowAllPlanets] = useState(true)
   const [showCosmicEnv, setShowCosmicEnv] = useState(false)
@@ -187,6 +191,14 @@ export default function LayerPanel({
               }`}
             >
               ✨ Stars
+            </button>
+            <button
+              onClick={onToggleAsteroids}
+              className={`py-1 rounded border transition-all ${
+                asteroidsVisible ? 'border-amber-500/50 bg-amber-500/20 text-amber-200' : 'border-white/5 bg-white/5 text-slate-500'
+              }`}
+            >
+              ☄️ Belts
             </button>
           </div>
         )}

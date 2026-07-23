@@ -76,6 +76,7 @@ export default function Home() {
   const [planetaryOrbitsVisible, setPlanetaryOrbitsVisible] = useState(false)
   const [probesVisible, setProbesVisible] = useState(false)
   const [constellationsVisible, setConstellationsVisible] = useState(false)
+  const [asteroidsVisible, setAsteroidsVisible] = useState(false)
   const audioSynthRef = useRef(new SpaceAudioSynth())
 
   const satsRef = useRef<SatInfo[]>(EMPTY_SATS)
@@ -184,6 +185,14 @@ export default function Home() {
     setConstellationsVisible((v) => {
       const next = !v
       engineRef.current?.setConstellationsVisible(next)
+      return next
+    })
+  }, [])
+
+  const handleToggleAsteroids = useCallback(() => {
+    setAsteroidsVisible((v) => {
+      const next = !v
+      engineRef.current?.setAsteroidsVisible(next)
       return next
     })
   }, [])
@@ -449,6 +458,8 @@ export default function Home() {
           probesVisible={probesVisible}
           onToggleConstellations={handleToggleConstellations}
           constellationsVisible={constellationsVisible}
+          onToggleAsteroids={handleToggleAsteroids}
+          asteroidsVisible={asteroidsVisible}
         />
       </div>
 
@@ -476,6 +487,8 @@ export default function Home() {
             probesVisible={probesVisible}
             onToggleConstellations={handleToggleConstellations}
             constellationsVisible={constellationsVisible}
+            onToggleAsteroids={handleToggleAsteroids}
+            asteroidsVisible={asteroidsVisible}
           />
         </div>
       )}

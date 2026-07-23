@@ -21,6 +21,7 @@ import { DEEP_SPACE_PROBES } from './probes'
 import { CONSTELLATIONS } from './constellations'
 import { LANDING_SITES, findLandingSiteNear, type LandingSite } from './landing-sites'
 import { createRealisticMoonTexture } from './moon-texture-generator'
+import { createAsteroidSwarm, type AsteroidSwarm } from './asteroids'
 
 /** Runtime state for a rendered planet or moon */
 interface PlanetRuntime {
@@ -328,6 +329,7 @@ export class GlobeEngine {
   private planetRuntimes: PlanetRuntime[] = []
   private probeGroup: THREE.Group | null = null
   private constellationGroup: THREE.Group | null = null
+  private asteroidSwarm: AsteroidSwarm | null = null
   private lastFocusPos: THREE.Vector3 | null = null
   private flyToActive = false
   private flyToStartTime = 0
@@ -660,8 +662,16 @@ export class GlobeEngine {
     // ═══════════════════════════════════════════════════════════════════════
     this.probeGroup = this.makeProbes()
     this.constellationGroup = this.makeConstellations()
-    this.scene.add(this.probeGroup)
-    this.scene.add(this.constellationGroup)
+
+    // --- 3D Asteroid & Kuiper Belts (Instanced Swarm) ---
+    this.asteroidSwarm = createAsteroidSwarm(this.sun.position)
+    this.scene.add(this.asteroidSwarm.mainBelt)
+    this.scene.add(this.asteroidSwarm.kuiperBelt)
+    this.asteroidSwarm.mainBelt.visible = false
+    this.asteroidSwarm.kuiperBelt.visible = false
+
+    if (this.probeGroup) this.scene.add(this.probeGroup)
+    if (this.constellationGroup) this.scene.add(this.constellationGroup)
 
     // --- selection marker ---
     this.marker = new THREE.Sprite(
@@ -1524,6 +1534,10 @@ export class GlobeEngine {
       this.animatePlanet(prt, simS, sunPos, sunDir, null)
     }
 
+    if (this.asteroidSwarm && (this.asteroidSwarm.mainBelt.visible || this.asteroidSwarm.kuiperBelt.visible)) {
+      this.asteroidSwarm.update(simS)
+    }
+
     // Camera Fly-To & Up-Close Focus Lerping — supports all celestial bodies
     const targetInfo = this.getTargetBodyInfo(this.focusTarget)
     if (targetInfo) {
@@ -1734,8 +1748,15 @@ export class GlobeEngine {
     if (this.probeGroup) this.probeGroup.visible = v
   }
 
-  setConstellationsVisible(v: boolean) {
-    if (this.constellationGroup) this.constellationGroup.visible = v
+  setConstellationsVisible(vis: boolean) {
+    if (this.constellationGroup) this.constellationGroup.visible = vis
+  }
+
+  setAsteroidsVisible(vis: boolean) {
+    if (this.asteroidSwarm) {
+      this.asteroidSwarm.mainBelt.visible = vis
+      this.asteroidSwarm.kuiperBelt.visible = vis
+    }
   }
 
   private makeProbes(): THREE.Group {
