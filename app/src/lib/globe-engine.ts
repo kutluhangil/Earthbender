@@ -17,7 +17,6 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { PLANETS, type CelestialBodyId, type PlanetDef } from './planets'
-import { generateAsteroidBelts } from './asteroids'
 import { DEEP_SPACE_PROBES } from './probes'
 import { CONSTELLATIONS } from './constellations'
 
@@ -326,8 +325,6 @@ export class GlobeEngine {
   private earthLandmarks: THREE.Group
   private focusTarget: CelestialBodyId = 'earth'
   private planetRuntimes: PlanetRuntime[] = []
-  private asteroidPoints: THREE.Points | null = null
-  private kuiperPoints: THREE.Points | null = null
   private probeGroup: THREE.Group | null = null
   private constellationGroup: THREE.Group | null = null
   private lastFocusPos: THREE.Vector3 | null = null
@@ -384,12 +381,12 @@ export class GlobeEngine {
       alpha: false,
       powerPreference: 'high-performance',
     })
-    this.renderer.setClearColor(0x04060a, 1)
+    this.renderer.setClearColor(0x000000, 1)
     container.appendChild(this.renderer.domElement)
 
     const initW = Math.max(1, container.clientWidth)
     const initH = Math.max(1, container.clientHeight)
-    this.camera = new THREE.PerspectiveCamera(42, initW / initH, 0.05, 400)
+    this.camera = new THREE.PerspectiveCamera(42, initW / initH, 0.05, 20000.0)
     this.camera.up.set(0, 0, 1)
     // large, dominant Earth; lower edge may bleed off the viewport
     this.camera.position.set(1.0, -2.75, 1.35)
@@ -399,7 +396,7 @@ export class GlobeEngine {
     this.controls.enableDamping = true
     this.controls.dampingFactor = 0.08
     this.controls.minDistance = 1.35
-    this.controls.maxDistance = 30
+    this.controls.maxDistance = 8000.0
     this.controls.autoRotate = true
     this.controls.autoRotateSpeed = 0.25
 
@@ -682,14 +679,10 @@ export class GlobeEngine {
     this.scene.add(this.makeStars())
 
     // ═══════════════════════════════════════════════════════════════════════
-    // COSMIC ENVIRONMENTS — Asteroit Belts, Deep Space Probes, Constellations
+    // COSMIC ENVIRONMENTS — Deep Space Probes, Constellations
     // ═══════════════════════════════════════════════════════════════════════
-    this.asteroidPoints = this.makeAsteroids()
-    this.kuiperPoints = this.makeKuiper()
     this.probeGroup = this.makeProbes()
     this.constellationGroup = this.makeConstellations()
-    this.scene.add(this.asteroidPoints)
-    this.scene.add(this.kuiperPoints)
     this.scene.add(this.probeGroup)
     this.scene.add(this.constellationGroup)
 
@@ -1695,7 +1688,7 @@ export class GlobeEngine {
     if (!info) return
 
     this.controls.minDistance = Math.max(0.01, info.radius * 1.15)
-    this.controls.maxDistance = 500.0
+    this.controls.maxDistance = 8000.0
 
     this.flyToActive = true
     this.flyToStartTime = performance.now()
@@ -1703,13 +1696,14 @@ export class GlobeEngine {
     this.flyToStartTarget.copy(this.controls.target)
   }
 
-  getFocusTarget(): CelestialBodyId {
-    return this.focusTarget
-  }
-
-  setAsteroidsVisible(v: boolean) {
-    if (this.asteroidPoints) this.asteroidPoints.visible = v
-    if (this.kuiperPoints) this.kuiperPoints.visible = v
+  setPlanetaryOrbitsVisible(v: boolean) {
+    if (this.moonOrbitLine) this.moonOrbitLine.visible = v
+    for (const rt of this.planetRuntimes) {
+      if (rt.orbitLine) rt.orbitLine.visible = v
+      for (const m of rt.moons) {
+        if (m.orbitLine) m.orbitLine.visible = v
+      }
+    }
   }
 
   setProbesVisible(v: boolean) {
@@ -1718,60 +1712,6 @@ export class GlobeEngine {
 
   setConstellationsVisible(v: boolean) {
     if (this.constellationGroup) this.constellationGroup.visible = v
-  }
-
-  private makeAsteroids(): THREE.Points {
-    const { mainBelt } = generateAsteroidBelts()
-    const pos = new Float32Array(mainBelt.length * 3)
-    const col = new Float32Array(mainBelt.length * 3)
-    for (let i = 0; i < mainBelt.length; i++) {
-      const a = mainBelt[i]
-      pos[i * 3] = a.x
-      pos[i * 3 + 1] = a.y
-      pos[i * 3 + 2] = a.z
-      const c = new THREE.Color(a.color)
-      col[i * 3] = c.r
-      col[i * 3 + 1] = c.g
-      col[i * 3 + 2] = c.b
-    }
-    const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-    geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
-    const mat = new THREE.PointsMaterial({
-      size: 0.35,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.75,
-      blending: THREE.AdditiveBlending,
-    })
-    return new THREE.Points(geo, mat)
-  }
-
-  private makeKuiper(): THREE.Points {
-    const { kuiperBelt } = generateAsteroidBelts()
-    const pos = new Float32Array(kuiperBelt.length * 3)
-    const col = new Float32Array(kuiperBelt.length * 3)
-    for (let i = 0; i < kuiperBelt.length; i++) {
-      const a = kuiperBelt[i]
-      pos[i * 3] = a.x
-      pos[i * 3 + 1] = a.y
-      pos[i * 3 + 2] = a.z
-      const c = new THREE.Color(a.color)
-      col[i * 3] = c.r
-      col[i * 3 + 1] = c.g
-      col[i * 3 + 2] = c.b
-    }
-    const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-    geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
-    const mat = new THREE.PointsMaterial({
-      size: 0.45,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.65,
-      blending: THREE.AdditiveBlending,
-    })
-    return new THREE.Points(geo, mat)
   }
 
   private makeProbes(): THREE.Group {

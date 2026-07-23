@@ -71,7 +71,7 @@ export default function Home() {
   const [layersOpen, setLayersOpen] = useState(false)
   const [showScaleModal, setShowScaleModal] = useState(false)
   const [audioPlaying, setAudioPlaying] = useState(false)
-  const [asteroidsVisible, setAsteroidsVisible] = useState(true)
+  const [planetaryOrbitsVisible, setPlanetaryOrbitsVisible] = useState(true)
   const [probesVisible, setProbesVisible] = useState(true)
   const [constellationsVisible, setConstellationsVisible] = useState(true)
   const audioSynthRef = useRef(new SpaceAudioSynth())
@@ -162,10 +162,10 @@ export default function Home() {
     setAudioPlaying(playing)
   }, [])
 
-  const handleToggleAsteroids = useCallback(() => {
-    setAsteroidsVisible((v) => {
+  const handleTogglePlanetaryOrbits = useCallback(() => {
+    setPlanetaryOrbitsVisible((v) => {
       const next = !v
-      engineRef.current?.setAsteroidsVisible(next)
+      engineRef.current?.setPlanetaryOrbitsVisible(next)
       return next
     })
   }, [])
@@ -441,8 +441,8 @@ export default function Home() {
           onToggleScaleSandbox={() => setShowScaleModal(true)}
           onToggleAudio={handleToggleAudio}
           audioPlaying={audioPlaying}
-          onToggleAsteroids={handleToggleAsteroids}
-          asteroidsVisible={asteroidsVisible}
+          onTogglePlanetaryOrbits={handleTogglePlanetaryOrbits}
+          planetaryOrbitsVisible={planetaryOrbitsVisible}
           onToggleProbes={handleToggleProbes}
           probesVisible={probesVisible}
           onToggleConstellations={handleToggleConstellations}
@@ -465,6 +465,15 @@ export default function Home() {
             onToggle={toggleGroup}
             focusBody={focusBody}
             onSelectBody={handleSelectBody}
+            onToggleScaleSandbox={() => setShowScaleModal(true)}
+            onToggleAudio={handleToggleAudio}
+            audioPlaying={audioPlaying}
+            onTogglePlanetaryOrbits={handleTogglePlanetaryOrbits}
+            planetaryOrbitsVisible={planetaryOrbitsVisible}
+            onToggleProbes={handleToggleProbes}
+            probesVisible={probesVisible}
+            onToggleConstellations={handleToggleConstellations}
+            constellationsVisible={constellationsVisible}
           />
         </div>
       )}
@@ -532,7 +541,7 @@ export default function Home() {
       )}
 
       {status === 'loading' && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#04060a]">
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black">
           <div className="font-mono text-xl font-bold tracking-[0.34em] text-white">
             <span className="text-cyan-400">E</span>ARTHBENDER
           </div>
@@ -542,7 +551,7 @@ export default function Home() {
       )}
 
       {status === 'error' && !dataset && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#04060a]">
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black">
           <div className="font-mono text-xl font-bold tracking-[0.34em] text-white">
             <span className="text-cyan-400">E</span>ARTHBENDER
           </div>

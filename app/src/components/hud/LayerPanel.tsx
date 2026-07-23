@@ -11,8 +11,8 @@ interface LayerPanelProps {
   onToggleScaleSandbox?: () => void
   onToggleAudio?: () => void
   audioPlaying?: boolean
-  onToggleAsteroids?: () => void
-  asteroidsVisible?: boolean
+  onTogglePlanetaryOrbits?: () => void
+  planetaryOrbitsVisible?: boolean
   onToggleProbes?: () => void
   probesVisible?: boolean
   onToggleConstellations?: () => void
@@ -34,8 +34,8 @@ export default function LayerPanel({
   onToggleScaleSandbox,
   onToggleAudio,
   audioPlaying = false,
-  onToggleAsteroids,
-  asteroidsVisible = true,
+  onTogglePlanetaryOrbits,
+  planetaryOrbitsVisible = true,
   onToggleProbes,
   probesVisible = true,
   onToggleConstellations,
@@ -154,12 +154,12 @@ export default function LayerPanel({
         </div>
         <div className="grid grid-cols-3 gap-1 font-mono text-[9px]">
           <button
-            onClick={onToggleAsteroids}
+            onClick={onTogglePlanetaryOrbits}
             className={`py-1 rounded border transition-all ${
-              asteroidsVisible ? 'border-amber-500/50 bg-amber-500/20 text-amber-200' : 'border-white/5 bg-white/5 text-slate-500'
+              planetaryOrbitsVisible ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-200' : 'border-white/5 bg-white/5 text-slate-500'
             }`}
           >
-            🪨 Belts
+            🪐 Orbits
           </button>
           <button
             onClick={onToggleProbes}
