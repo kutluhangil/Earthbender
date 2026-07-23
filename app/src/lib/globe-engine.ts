@@ -911,6 +911,7 @@ export class GlobeEngine {
         blending: THREE.AdditiveBlending,
       }),
     )
+    orbitLine.visible = false
     this.scene.add(orbitLine)
 
     // Saturn ring — 3D Shader with radial polar UV mapping
@@ -1552,7 +1553,7 @@ export class GlobeEngine {
 
         const dir = this.tmpVec3.copy(this.flyToStartCam).sub(this.flyToStartTarget).normalize()
         if (dir.lengthSq() < 0.01 || !isFinite(dir.x)) dir.set(0, -1, 0.5).normalize()
-        const endCamPos = this.tmpVec4.copy(currentTargetPos).add(dir.multiplyScalar(targetRadius * 2.8))
+        const endCamPos = this.tmpVec4.copy(currentTargetPos).add(dir.multiplyScalar(Math.max(0.20, targetRadius * 3.2)))
 
         this.controls.target.lerpVectors(this.flyToStartTarget, currentTargetPos, ease)
         this.camera.position.lerpVectors(this.flyToStartCam, endCamPos, ease)
@@ -1587,8 +1588,8 @@ export class GlobeEngine {
         const pulse = 0.045 + 0.01 * Math.sin(performance.now() * 0.005)
         this.marker.scale.setScalar(pulse)
 
-        // 3D Signal Cone position & orientation
-        if (this.showFoot) {
+        // 3D Signal Cone position & orientation - only visible when satellite selected & target is Earth
+        if (this.showFoot && this.focusTarget === 'earth') {
           const satPos = p.clone()
           const groundPos = satPos.clone().normalize()
           this.signalCone.position.copy(satPos)
@@ -1722,10 +1723,15 @@ export class GlobeEngine {
     this.focusTarget = target
     this.pinMarker.visible = false
     this.marker.visible = false
+    this.signalCone.visible = false
     const info = this.getTargetBodyInfo(target)
     if (!info) return
 
-    this.controls.minDistance = Math.max(0.01, info.radius * 1.15)
+    // Dynamically adjust camera near clipping plane so small moons are never sliced off
+    this.camera.near = Math.max(0.001, Math.min(0.1, info.radius * 0.08))
+    this.camera.updateProjectionMatrix()
+
+    this.controls.minDistance = Math.max(0.005, info.radius * 1.1)
     this.controls.maxDistance = 8000.0
 
     this.flyToActive = true
@@ -1770,6 +1776,19 @@ export class GlobeEngine {
       const mat = new THREE.MeshBasicMaterial({ color: 0x00f0ff })
       const mesh = new THREE.Mesh(geo, mat)
       mesh.position.set(px, py, pz)
+
+      const MOON_ORBIT_R = 9.5
+      const moonOrbitPts: THREE.Vector3[] = []
+      for (let i = 0; i <= 128; i++) {
+        const a = (i / 128) * Math.PI * 2
+        moonOrbitPts.push(new THREE.Vector3(Math.cos(a) * MOON_ORBIT_R, Math.sin(a) * Math.cos((5.14 * Math.PI) / 180) * MOON_ORBIT_R, Math.sin(a) * Math.sin((5.14 * Math.PI) / 180) * MOON_ORBIT_R))
+      }
+      this.moonOrbitLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(moonOrbitPts),
+        new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.25 }),
+      )
+      this.moonOrbitLine.visible = false
+      this.scene.add(this.moonOrbitLine)
 
       const lineGeo = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(0, 0, 0),

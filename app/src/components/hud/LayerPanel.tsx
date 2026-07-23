@@ -46,7 +46,6 @@ export default function LayerPanel({
   asteroidsVisible = false,
 }: LayerPanelProps) {
   const [showAllPlanets, setShowAllPlanets] = useState(true)
-  const [showCosmicEnv, setShowCosmicEnv] = useState(false)
 
   const currentDef = findPlanetDef(focusBody)
   const currentLabel = focusBody === 'earth' ? '🌍 Earth' : focusBody === 'moon' ? '🌕 Moon' : focusBody === 'sun' ? '☀️ Sun' : currentDef ? `${currentDef.emoji} ${currentDef.name}` : focusBody
@@ -152,56 +151,45 @@ export default function LayerPanel({
         )}
       </div>
 
-      {/* Cosmic Layers Toggles (Closed by default) */}
+      {/* Cosmic Layers Toggles */}
       <div className="border-t border-white/5 pt-2">
-        <div className="flex items-center justify-between mb-1">
-          <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-slate-500">
-            Cosmic Environments
-          </div>
+        <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.25em] text-slate-500">
+          Cosmic Environments
+        </div>
+        <div className="grid grid-cols-2 gap-1 font-mono text-[9px] mt-1.5">
           <button
-            onClick={() => setShowCosmicEnv(!showCosmicEnv)}
-            className="font-mono text-[9px] text-cyan-400 hover:text-cyan-300 underline"
+            onClick={onTogglePlanetaryOrbits}
+            className={`py-1 rounded border transition-all ${
+              planetaryOrbitsVisible ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-200 font-semibold shadow-[0_0_8px_rgba(6,182,212,0.3)]' : 'border-white/5 bg-white/5 text-slate-500'
+            }`}
           >
-            {showCosmicEnv ? 'Hide ➖' : 'Expand ➕'}
+            🪐 Orbits
+          </button>
+          <button
+            onClick={onToggleProbes}
+            className={`py-1 rounded border transition-all ${
+              probesVisible ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-200 font-semibold shadow-[0_0_8px_rgba(6,182,212,0.3)]' : 'border-white/5 bg-white/5 text-slate-500'
+            }`}
+          >
+            🛰️ Probes
+          </button>
+          <button
+            onClick={onToggleConstellations}
+            className={`py-1 rounded border transition-all ${
+              constellationsVisible ? 'border-indigo-500/50 bg-indigo-500/20 text-indigo-200 font-semibold shadow-[0_0_8px_rgba(99,102,241,0.3)]' : 'border-white/5 bg-white/5 text-slate-500'
+            }`}
+          >
+            ✨ Stars
+          </button>
+          <button
+            onClick={onToggleAsteroids}
+            className={`py-1 rounded border transition-all ${
+              asteroidsVisible ? 'border-amber-500/50 bg-amber-500/20 text-amber-200 font-semibold shadow-[0_0_8px_rgba(245,158,11,0.3)]' : 'border-white/5 bg-white/5 text-slate-500'
+            }`}
+          >
+            ☄️ Belts
           </button>
         </div>
-
-        {showCosmicEnv && (
-          <div className="grid grid-cols-3 gap-1 font-mono text-[9px] mt-1.5 animate-in fade-in duration-200">
-            <button
-              onClick={onTogglePlanetaryOrbits}
-              className={`py-1 rounded border transition-all ${
-                planetaryOrbitsVisible ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-200' : 'border-white/5 bg-white/5 text-slate-500'
-              }`}
-            >
-              🪐 Orbits
-            </button>
-            <button
-              onClick={onToggleProbes}
-              className={`py-1 rounded border transition-all ${
-                probesVisible ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-200' : 'border-white/5 bg-white/5 text-slate-500'
-              }`}
-            >
-              🛰️ Probes
-            </button>
-            <button
-              onClick={onToggleConstellations}
-              className={`py-1 rounded border transition-all ${
-                constellationsVisible ? 'border-indigo-500/50 bg-indigo-500/20 text-indigo-200' : 'border-white/5 bg-white/5 text-slate-500'
-              }`}
-            >
-              ✨ Stars
-            </button>
-            <button
-              onClick={onToggleAsteroids}
-              className={`py-1 rounded border transition-all ${
-                asteroidsVisible ? 'border-amber-500/50 bg-amber-500/20 text-amber-200' : 'border-white/5 bg-white/5 text-slate-500'
-              }`}
-            >
-              ☄️ Belts
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Satellite Layers */}
