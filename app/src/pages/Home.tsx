@@ -550,7 +550,7 @@ export default function Home() {
       {status === 'loading' && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black">
           <div className="font-mono text-xl font-bold tracking-[0.34em] text-white">
-            <span className="text-cyan-400">E</span>ARTHBENDER
+            <span className="text-cyan-400">A</span>STROBENDER
           </div>
           <div className="mt-6 h-7 w-7 animate-spin rounded-full border-2 border-cyan-400/25 border-t-cyan-400" />
           <div className="mt-4 font-mono text-xs text-slate-500">Initializing 3D Solar System & Orbitals…</div>
@@ -560,7 +560,7 @@ export default function Home() {
       {status === 'error' && !dataset && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black">
           <div className="font-mono text-xl font-bold tracking-[0.34em] text-white">
-            <span className="text-cyan-400">E</span>ARTHBENDER
+            <span className="text-cyan-400">A</span>STROBENDER
           </div>
           <div className="mt-6 max-w-sm text-center text-sm text-rose-300">
             Failed to load orbital data{error ? `: ${error}` : '.'}

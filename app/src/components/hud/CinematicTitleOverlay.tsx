@@ -6,29 +6,29 @@ interface CinematicTitleOverlayProps {
   bodyId: CelestialBodyId
 }
 
-const DESIGNATION_CODES: Record<CelestialBodyId, { sector: string; code: string }> = {
-  sun: { sector: 'SECTOR-00 // CENTRAL STAR', code: 'DESIGNATION: SOL-PRIME' },
-  mercury: { sector: 'SECTOR-01 // INNER ORBIT', code: 'DESIGNATION: MERCURY-01' },
-  venus: { sector: 'SECTOR-02 // VEILED ZONE', code: 'DESIGNATION: VENUS-ALPHA' },
-  earth: { sector: 'SECTOR-03 // HABITABLE ZONE', code: 'DESIGNATION: TERRA-HOME' },
-  moon: { sector: 'SECTOR-03 // LUNAR ORBIT', code: 'DESIGNATION: LUNA-PRIMARY' },
-  mars: { sector: 'SECTOR-04 // RED FRONTIER', code: 'DESIGNATION: MARS-COLONY' },
-  phobos: { sector: 'SECTOR-04 // AREAN ORBIT', code: 'DESIGNATION: PHOBOS-OUTPOST' },
-  deimos: { sector: 'SECTOR-04 // AREAN ORBIT', code: 'DESIGNATION: DEIMOS-STATION' },
-  jupiter: { sector: 'SECTOR-05 // JOVIAN SYSTEM', code: 'DESIGNATION: JUPITER-KING' },
-  io: { sector: 'SECTOR-05 // JOVIAN MOON', code: 'DESIGNATION: IO-VOLCANIC' },
-  europa: { sector: 'SECTOR-05 // JOVIAN MOON', code: 'DESIGNATION: EUROPA-OCEANUS' },
-  ganymede: { sector: 'SECTOR-05 // JOVIAN MOON', code: 'DESIGNATION: GANYMEDE-HUB' },
-  callisto: { sector: 'SECTOR-05 // JOVIAN MOON', code: 'DESIGNATION: CALLISTO-BASE' },
-  saturn: { sector: 'SECTOR-06 // RINGWORLD ZONE', code: 'DESIGNATION: SATURN-PRIME' },
-  titan: { sector: 'SECTOR-06 // SATURNIAN MOON', code: 'DESIGNATION: TITAN-METHOUS' },
-  enceladus: { sector: 'SECTOR-06 // SATURNIAN MOON', code: 'DESIGNATION: ENCELADUS-CRYOS' },
-  uranus: { sector: 'SECTOR-07 // ICE GIANT REALM', code: 'DESIGNATION: URANUS-TILT' },
-  titania: { sector: 'SECTOR-07 // URANIAN MOON', code: 'DESIGNATION: TITANIA-01' },
-  oberon: { sector: 'SECTOR-07 // URANIAN MOON', code: 'DESIGNATION: OBERON-01' },
-  neptune: { sector: 'SECTOR-08 // DEEP FROST REALM', code: 'DESIGNATION: NEPTUNE-WINDS' },
-  triton: { sector: 'SECTOR-08 // NEPTUNIAN MOON', code: 'DESIGNATION: TRITON-RETRO' },
-  pluto: { sector: 'SECTOR-09 // KUIPER RIM', code: 'DESIGNATION: PLUTO-TOMBAUGH' },
+const CONTROL_SECTORS: Record<CelestialBodyId, { sector: string; code: string }> = {
+  sun: { sector: 'CENTRAL CORE // SOL-PRIME', code: 'STATUS: ACTIVE DYNAMIC FUSION' },
+  mercury: { sector: 'INNER RIM // SECTOR-01', code: 'ENVIRONMENT: EXTREME THERMAL' },
+  venus: { sector: 'ATMOSPHERIC SECTOR // SECTOR-02', code: 'STATUS: DENSE CO2 VEIL' },
+  earth: { sector: 'EXECUTIVE HOMEWORLD // SECTOR-03', code: 'STATUS: HABITABLE TERRA' },
+  moon: { sector: 'LUNAR SECTOR // SECTOR-03 B', code: 'STATUS: LUNA REGOLITH' },
+  mars: { sector: 'RESEARCH SECTOR // SECTOR-04', code: 'STATUS: RED REGOLITH' },
+  phobos: { sector: 'AREAN ORBITAL // SECTOR-04 A', code: 'STATUS: MARTIAN SATELLITE' },
+  deimos: { sector: 'AREAN ORBITAL // SECTOR-04 B', code: 'STATUS: MARTIAN SATELLITE' },
+  jupiter: { sector: 'JOVIAN SECTOR // SECTOR-05', code: 'STATUS: GAS GIANT KING' },
+  io: { sector: 'JOVIAN MOON // SECTOR-05 A', code: 'STATUS: HIGH VOLCANISM' },
+  europa: { sector: 'JOVIAN MOON // SECTOR-05 B', code: 'STATUS: SUB-ICE OCEAN' },
+  ganymede: { sector: 'JOVIAN MOON // SECTOR-05 C', code: 'STATUS: MAGNETOSPHERE' },
+  callisto: { sector: 'JOVIAN MOON // SECTOR-05 D', code: 'STATUS: ANCIENT CRATERS' },
+  saturn: { sector: 'RINGWORLD SECTOR // SECTOR-06', code: 'STATUS: ICE RING DYNAMICS' },
+  titan: { sector: 'SATURNIAN MOON // SECTOR-06 A', code: 'STATUS: METHANE LAKES' },
+  enceladus: { sector: 'SATURNIAN MOON // SECTOR-06 B', code: 'STATUS: CRYO-GEYSERS' },
+  uranus: { sector: 'ICE GIANT SECTOR // SECTOR-07', code: 'STATUS: AXIAL TILT 97.7°' },
+  titania: { sector: 'URANIAN MOON // SECTOR-07 A', code: 'STATUS: ICE CANYONS' },
+  oberon: { sector: 'URANIAN MOON // SECTOR-07 B', code: 'STATUS: ANCIENT BASIN' },
+  neptune: { sector: 'DEEP FROST SECTOR // SECTOR-08', code: 'STATUS: SUPERSONIC WINDS' },
+  triton: { sector: 'NEPTUNIAN MOON // SECTOR-08 A', code: 'STATUS: RETROGRADE ORBIT' },
+  pluto: { sector: 'KUIPER SECTOR // SECTOR-09', code: 'STATUS: KUIPER BELT RIM' },
 }
 
 export default function CinematicTitleOverlay({ bodyId }: CinematicTitleOverlayProps) {
@@ -36,7 +36,7 @@ export default function CinematicTitleOverlay({ bodyId }: CinematicTitleOverlayP
   const [animKey, setAnimKey] = useState(0)
 
   const fact = CELESTIAL_FACTS[bodyId]
-  const info = DESIGNATION_CODES[bodyId] ?? { sector: 'SECTOR-UNKNOWN', code: 'DESIGNATION: UNKNOWN' }
+  const info = CONTROL_SECTORS[bodyId] ?? { sector: 'UNKNOWN SECTOR', code: 'STATUS: UNKNOWN' }
 
   // Re-trigger animation on body change
   useEffect(() => {
@@ -44,52 +44,51 @@ export default function CinematicTitleOverlay({ bodyId }: CinematicTitleOverlayP
     setAnimKey((k) => k + 1)
     const timer = setTimeout(() => {
       setActive(false)
-    }, 5000)
+    }, 4500)
     return () => clearTimeout(timer)
   }, [bodyId])
 
   if (!fact) return null
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-30 flex items-center justify-center select-none">
-      {/* Sci-Fi Center Cinematic Banner */}
+    <div className="pointer-events-none fixed inset-0 z-30 flex items-center justify-center select-none overflow-hidden">
+      {/* Remedy's CONTROL Game Style Location Card Banner */}
       <div
         key={animKey}
-        className={`flex flex-col items-center text-center transition-all duration-700 ${
+        className={`flex flex-col items-center text-center transition-all duration-1000 ease-out transform ${
           active
-            ? 'opacity-100 scale-100 translate-y-0'
-            : 'opacity-0 scale-95 -translate-y-4'
+            ? 'opacity-100 scale-100 blur-0 translate-y-0'
+            : 'opacity-0 scale-105 blur-sm -translate-y-2'
         }`}
       >
-        {/* Sci-Fi Top Header Lines */}
-        <div className="flex items-center gap-3 text-[10px] font-mono tracking-[0.4em] text-cyan-400/90 uppercase mb-1 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
-          <span className="h-[1px] w-8 bg-cyan-400/50" />
+        {/* Control Subtitle / Sector Line */}
+        <div className="font-mono text-[10px] md:text-xs tracking-[0.45em] text-cyan-400 font-bold uppercase mb-2 drop-shadow-[0_0_10px_rgba(6,182,212,0.8)] flex items-center gap-3">
+          <span className="h-[2px] w-6 bg-cyan-400/80" />
           <span>{info.sector}</span>
-          <span className="h-[1px] w-8 bg-cyan-400/50" />
+          <span className="h-[2px] w-6 bg-cyan-400/80" />
         </div>
 
-        {/* Main Sci-Fi Movie Title */}
-        <div className="relative px-8 py-2">
-          {/* Brackets */}
-          <div className="absolute left-0 top-0 bottom-0 w-2 border-l-2 border-t-2 border-b-2 border-cyan-400/60" />
-          <div className="absolute right-0 top-0 bottom-0 w-2 border-r-2 border-t-2 border-b-2 border-cyan-400/60" />
-
-          <h2 className="font-mono text-3xl font-extrabold tracking-[0.45em] text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] md:text-5xl uppercase">
+        {/* Control Giant Brutalist Location Title */}
+        <div className="relative px-6 py-1">
+          <h2
+            className="font-['Syncopate'] text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-[0.35em] text-white uppercase drop-shadow-[0_0_35px_rgba(255,255,255,0.7)]"
+            style={{ fontFamily: "'Syncopate', sans-serif" }}
+          >
             {fact.name}
           </h2>
         </div>
 
-        {/* Sci-Fi Bottom Subtitle & Coordinates */}
-        <div className="mt-2 flex flex-col items-center gap-1 font-mono text-[11px] tracking-[0.25em] text-slate-300">
-          <span className="text-cyan-300/90 font-semibold">{info.code}</span>
-          <span className="text-[10px] text-slate-400">
-            {fact.typeTr.toUpperCase()} · RADIUS: {fact.radiusKm}
-          </span>
-        </div>
+        {/* Control Bottom Line & Technical Specs */}
+        <div className="mt-3 flex flex-col items-center gap-1.5">
+          {/* Brutalist Red/Cyan Line */}
+          <div className="h-[3px] w-36 bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,1)]" />
 
-        {/* Sci-Fi Scanline bar effect */}
-        <div className="mt-3 h-[2px] w-48 overflow-hidden rounded-full bg-cyan-950">
-          <div className="h-full w-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse" />
+          <div className="font-['Outfit'] font-black text-[11px] md:text-xs tracking-[0.3em] text-slate-300 uppercase mt-1">
+            {info.code}
+          </div>
+          <div className="font-mono text-[10px] tracking-[0.2em] text-slate-400 uppercase">
+            {fact.typeTr} · RADIUS: {fact.radiusKm}
+          </div>
         </div>
       </div>
     </div>
