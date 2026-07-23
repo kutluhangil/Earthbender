@@ -97,6 +97,7 @@ uniform float uDur;  // interval duration in seconds
 uniform float uScale;
 uniform float uPixelRatio;
 varying vec3 vColor;
+varying float vAlpha;
 void main() {
   float s = clamp(uS / uDur, 0.0, 1.0);
   float s2 = s * s;
@@ -109,22 +110,29 @@ void main() {
   vColor = aColor;
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
-  float ps = aSize * uScale * uPixelRatio * (3.1 / -mv.z);
-  gl_PointSize = clamp(ps, 1.0, 48.0);
+  float dist = -mv.z;
+  // Fade satellite opacity & size smoothly when camera zooms out past Earth orbit (dist > 15.0)
+  float distFade = smoothstep(120.0, 15.0, dist);
+  vAlpha = clamp(distFade, 0.0, 1.0);
+  float ps = aSize * uScale * uPixelRatio * (3.1 / dist) * distFade;
+  gl_PointSize = clamp(ps, 0.0, 48.0);
 }
 `
 
 const SAT_FRAG = /* glsl */ `
 varying vec3 vColor;
+varying float vAlpha;
 uniform float uIntensity;
 void main() {
+  if (vAlpha < 0.01) discard;
   vec2 c = gl_PointCoord - 0.5;
   float d = length(c);
   if (d > 0.5) discard;
   float core = smoothstep(0.30, 0.10, d);
   float halo = smoothstep(0.5, 0.12, d) * 0.5;
   vec3 col = vColor * (0.5 + uIntensity * core);
-  gl_FragColor = vec4(col, max(halo, core));
+  float alpha = max(halo, core) * vAlpha;
+  gl_FragColor = vec4(col, alpha);
 }
 `
 
@@ -201,7 +209,7 @@ const ATMO_FRAG = /* glsl */ `
 varying vec3 vN;
 void main() {
   float intensity = pow(max(0.60 - dot(normalize(vN), vec3(0.0, 0.0, 1.0)), 0.0), 4.5);
-  gl_FragColor = vec4(0.35, 0.65, 1.15, 1.0) * intensity * 1.8;
+  gl_FragColor = vec4(0.35, 0.65, 1.15, 1.0) * intensity * 1.1;
 }
 `
 
@@ -835,7 +843,7 @@ export class GlobeEngine {
     // Bloom is blurry by nature so half-res is visually indistinguishable
     this.composer = new EffectComposer(this.renderer)
     this.composer.addPass(new RenderPass(this.scene, this.camera))
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(Math.ceil(initW / 2), Math.ceil(initH / 2)), 0.55, 0.35, 1.0)
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(Math.ceil(initW / 2), Math.ceil(initH / 2)), 0.45, 0.25, 0.98)
     this.composer.addPass(this.bloom)
     this.composer.addPass(new OutputPass())
     this.applySize()
