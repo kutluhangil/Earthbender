@@ -322,6 +322,10 @@ export class GlobeEngine {
   private earthLandmarks: THREE.Group
   private focusTarget: CelestialBodyId = 'earth'
   private planetRuntimes: PlanetRuntime[] = []
+  private lastFocusTarget: CelestialBodyId | null = null
+  private lastFocusPos: THREE.Vector3 | null = null
+  private isFocusTransitioning = false
+  private desiredCamPos = new THREE.Vector3()
   private groups: GroupRuntime[] = []
   /** hidden replacement set during a dataset swap (old groups keep rendering) */
   private replacement: GroupRuntime[] | null = null
@@ -1293,7 +1297,7 @@ export class GlobeEngine {
       )
       const raycaster = new THREE.Raycaster()
       raycaster.setFromCamera(mouse, this.camera)
-      const targetObj = this.getTargetMeshAndName(this.focusTarget)
+      const targetObj = this.getTargetBodyInfo(this.focusTarget)
       const targetMesh = targetObj ? targetObj.mesh : this.earth
       const targetName = targetObj ? targetObj.name : '🌍 EARTH'
       const hits = raycaster.intersectObject(targetMesh)
@@ -1422,12 +1426,43 @@ export class GlobeEngine {
       this.animatePlanet(prt, simS, sunPos, sunDir, null)
     }
 
-    // Camera Focus Lerping — supports all celestial bodies
-    const focusPt = this.getFocusPosition()
-    if (focusPt) {
-      this.controls.target.lerp(focusPt, 0.08)
+    // Camera Fly-To & Up-Close Focus Lerping — supports all celestial bodies
+    const targetInfo = this.getTargetBodyInfo(this.focusTarget)
+    if (targetInfo) {
+      const targetPos = targetInfo.mesh.position
+      const targetRadius = targetInfo.radius
+
+      if (this.lastFocusTarget !== this.focusTarget) {
+        this.lastFocusTarget = this.focusTarget
+        this.isFocusTransitioning = true
+        let dir = this.camera.position.clone().sub(this.controls.target).normalize()
+        if (dir.lengthSq() < 0.01 || !isFinite(dir.x)) dir.set(0, -1, 0.5).normalize()
+        this.desiredCamPos.copy(targetPos).add(dir.multiplyScalar(targetRadius * 2.8))
+      }
+
+      if (this.isFocusTransitioning) {
+        this.controls.target.lerp(targetPos, 0.08)
+        this.camera.position.lerp(this.desiredCamPos, 0.08)
+        if (
+          this.controls.target.distanceTo(targetPos) < 0.05 &&
+          this.camera.position.distanceTo(this.desiredCamPos) < 0.1
+        ) {
+          this.isFocusTransitioning = false
+        }
+      } else {
+        // Keep camera target and position locked onto moving body
+        if (this.lastFocusPos) {
+          const delta = targetPos.clone().sub(this.lastFocusPos)
+          this.camera.position.add(delta)
+          this.controls.target.add(delta)
+        } else {
+          this.controls.target.copy(targetPos)
+        }
+      }
+      this.lastFocusPos = targetPos.clone()
     } else if (this.selected === null && !this.follow) {
       this.controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.08)
+      this.lastFocusPos = null
     }
 
     const uS = Math.min(Math.max(simS - this.t0, 0), Math.max(this.t1 - this.t0, 0.001))
@@ -1542,23 +1577,26 @@ export class GlobeEngine {
     const rotSpeed = (2 * Math.PI) / (def.rotationPeriodHours * 3600)
     mesh.rotation.z = (simS * rotSpeed * rotSign) % (Math.PI * 2)
 
+    // Calculate vector pointing from planet to Sun for accurate 3D lighting
+    const bodySunDir = sunPos.clone().sub(mesh.position).normalize()
+    if (bodySunDir.lengthSq() < 0.001) bodySunDir.set(1, 0, 0)
     mat.uniforms.uTime.value = performance.now() * 0.001
-    ;(mat.uniforms.uSunDir.value as THREE.Vector3).copy(sunDir)
+    ;(mat.uniforms.uSunDir.value as THREE.Vector3).copy(bodySunDir)
 
     for (const m of moons) {
       this.animatePlanet(m, simS, sunPos, sunDir, mesh.position)
     }
   }
 
-  private getTargetMeshAndName(id: CelestialBodyId): { mesh: THREE.Mesh; name: string } | null {
-    if (id === 'earth') return { mesh: this.earth, name: '🌍 EARTH' }
-    if (id === 'moon') return { mesh: this.moon, name: '🌕 MOON' }
-    if (id === 'sun') return { mesh: this.sun, name: '☀️ SUN' }
+  private getTargetBodyInfo(id: CelestialBodyId): { mesh: THREE.Mesh; radius: number; name: string } | null {
+    if (id === 'earth') return { mesh: this.earth, radius: 1.0, name: '🌍 EARTH' }
+    if (id === 'moon') return { mesh: this.moon, radius: 0.2727, name: '🌕 MOON' }
+    if (id === 'sun') return { mesh: this.sun, radius: 2.5, name: '☀️ SUN' }
 
-    const findInRuntimes = (list: PlanetRuntime[]): { mesh: THREE.Mesh; name: string } | null => {
+    const findInRuntimes = (list: PlanetRuntime[]): { mesh: THREE.Mesh; radius: number; name: string } | null => {
       for (const prt of list) {
         if (prt.def.id === id) {
-          return { mesh: prt.mesh, name: `${prt.def.emoji} ${prt.def.name.toUpperCase()}` }
+          return { mesh: prt.mesh, radius: prt.def.radius, name: `${prt.def.emoji} ${prt.def.name.toUpperCase()}` }
         }
         const sub = findInRuntimes(prt.moons)
         if (sub) return sub
@@ -1568,13 +1606,13 @@ export class GlobeEngine {
     return findInRuntimes(this.planetRuntimes)
   }
 
-  private getFocusPosition(): THREE.Vector3 | null {
-    const target = this.getTargetMeshAndName(this.focusTarget)
-    return target ? target.mesh.position : null
-  }
-
   setFocusTarget(target: CelestialBodyId) {
     this.focusTarget = target
+    const info = this.getTargetBodyInfo(target)
+    if (info) {
+      this.controls.minDistance = Math.max(0.01, info.radius * 1.15)
+      this.controls.maxDistance = Math.max(10, info.radius * 25.0)
+    }
   }
 
   getFocusTarget(): CelestialBodyId {
