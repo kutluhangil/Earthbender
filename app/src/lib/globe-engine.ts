@@ -1385,11 +1385,15 @@ export class GlobeEngine {
           const localPt = pt.clone().sub(topMesh.position).applyMatrix4(topMesh.matrixWorld.clone().invert()).normalize()
           const lat = Math.asin(Math.min(Math.max(localPt.z, -1), 1)) * (180 / Math.PI)
           const lon = Math.atan2(localPt.y, localPt.x) * (180 / Math.PI)
-          this.pinMarker.position.copy(pt.clone().add(pt.clone().sub(topMesh.position).normalize().multiplyScalar(0.01)))
-          this.pinMarker.visible = true
+          const site = siteFromSprite ?? findLandingSiteNear(match.id, lat, lon)
+          if (site) {
+            this.pinMarker.position.copy(pt.clone().add(pt.clone().sub(topMesh.position).normalize().multiplyScalar(0.01)))
+            this.pinMarker.visible = true
+          } else {
+            this.pinMarker.visible = false
+          }
           const latStr = `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'}`
           const lonStr = `${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? 'E' : 'W'}`
-          const site = siteFromSprite ?? findLandingSiteNear(match.id, lat, lon)
 
           this.setFocusTarget(match.id)
           this.cb.onSelectBody?.(match.id)
@@ -1692,6 +1696,8 @@ export class GlobeEngine {
 
   setFocusTarget(target: CelestialBodyId) {
     this.focusTarget = target
+    this.pinMarker.visible = false
+    this.marker.visible = false
     const info = this.getTargetBodyInfo(target)
     if (!info) return
 
