@@ -23,7 +23,7 @@ export default function LayerPanel({
   focusBody = 'earth',
   onSelectBody,
 }: LayerPanelProps) {
-  const [showAllPlanets, setShowAllPlanets] = useState(false)
+  const [showAllPlanets, setShowAllPlanets] = useState(true)
 
   const currentDef = findPlanetDef(focusBody)
   const currentLabel = focusBody === 'earth' ? '🌍 Earth' : focusBody === 'moon' ? '🌕 Moon' : focusBody === 'sun' ? '☀️ Sun' : currentDef ? `${currentDef.emoji} ${currentDef.name}` : focusBody

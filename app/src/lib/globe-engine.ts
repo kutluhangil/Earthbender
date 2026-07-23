@@ -322,10 +322,11 @@ export class GlobeEngine {
   private earthLandmarks: THREE.Group
   private focusTarget: CelestialBodyId = 'earth'
   private planetRuntimes: PlanetRuntime[] = []
-  private lastFocusTarget: CelestialBodyId | null = null
   private lastFocusPos: THREE.Vector3 | null = null
-  private isFocusTransitioning = false
-  private desiredCamPos = new THREE.Vector3()
+  private flyToActive = false
+  private flyToStartTime = 0
+  private flyToStartCam = new THREE.Vector3()
+  private flyToStartTarget = new THREE.Vector3()
   private groups: GroupRuntime[] = []
   /** hidden replacement set during a dataset swap (old groups keep rendering) */
   private replacement: GroupRuntime[] | null = null
@@ -1429,37 +1430,36 @@ export class GlobeEngine {
     // Camera Fly-To & Up-Close Focus Lerping — supports all celestial bodies
     const targetInfo = this.getTargetBodyInfo(this.focusTarget)
     if (targetInfo) {
-      const targetPos = targetInfo.mesh.position
+      const currentTargetPos = targetInfo.mesh.position.clone()
       const targetRadius = targetInfo.radius
 
-      if (this.lastFocusTarget !== this.focusTarget) {
-        this.lastFocusTarget = this.focusTarget
-        this.isFocusTransitioning = true
-        let dir = this.camera.position.clone().sub(this.controls.target).normalize()
-        if (dir.lengthSq() < 0.01 || !isFinite(dir.x)) dir.set(0, -1, 0.5).normalize()
-        this.desiredCamPos.copy(targetPos).add(dir.multiplyScalar(targetRadius * 2.8))
-      }
+      if (this.flyToActive) {
+        const elapsed = performance.now() - this.flyToStartTime
+        const progress = Math.min(1, elapsed / 800)
+        const ease = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2
 
-      if (this.isFocusTransitioning) {
-        this.controls.target.lerp(targetPos, 0.08)
-        this.camera.position.lerp(this.desiredCamPos, 0.08)
-        if (
-          this.controls.target.distanceTo(targetPos) < 0.05 &&
-          this.camera.position.distanceTo(this.desiredCamPos) < 0.1
-        ) {
-          this.isFocusTransitioning = false
+        let dir = this.flyToStartCam.clone().sub(this.flyToStartTarget).normalize()
+        if (dir.lengthSq() < 0.01 || !isFinite(dir.x)) dir.set(0, -1, 0.5).normalize()
+        const endCamPos = currentTargetPos.clone().add(dir.multiplyScalar(targetRadius * 2.8))
+
+        this.controls.target.lerpVectors(this.flyToStartTarget, currentTargetPos, ease)
+        this.camera.position.lerpVectors(this.flyToStartCam, endCamPos, ease)
+        this.controls.update()
+
+        if (progress >= 1) {
+          this.flyToActive = false
         }
       } else {
-        // Keep camera target and position locked onto moving body
+        // Lock-on tracking for moving celestial bodies
         if (this.lastFocusPos) {
-          const delta = targetPos.clone().sub(this.lastFocusPos)
+          const delta = currentTargetPos.clone().sub(this.lastFocusPos)
           this.camera.position.add(delta)
           this.controls.target.add(delta)
         } else {
-          this.controls.target.copy(targetPos)
+          this.controls.target.copy(currentTargetPos)
         }
       }
-      this.lastFocusPos = targetPos.clone()
+      this.lastFocusPos = currentTargetPos.clone()
     } else if (this.selected === null && !this.follow) {
       this.controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.08)
       this.lastFocusPos = null
@@ -1609,10 +1609,15 @@ export class GlobeEngine {
   setFocusTarget(target: CelestialBodyId) {
     this.focusTarget = target
     const info = this.getTargetBodyInfo(target)
-    if (info) {
-      this.controls.minDistance = Math.max(0.01, info.radius * 1.15)
-      this.controls.maxDistance = Math.max(10, info.radius * 25.0)
-    }
+    if (!info) return
+
+    this.controls.minDistance = Math.max(0.01, info.radius * 1.15)
+    this.controls.maxDistance = 500.0
+
+    this.flyToActive = true
+    this.flyToStartTime = performance.now()
+    this.flyToStartCam.copy(this.camera.position)
+    this.flyToStartTarget.copy(this.controls.target)
   }
 
   getFocusTarget(): CelestialBodyId {
