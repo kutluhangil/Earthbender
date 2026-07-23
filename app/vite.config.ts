@@ -1,12 +1,11 @@
 import path from "path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
-import { inspectAttr } from 'kimi-plugin-inspect-react'
 
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [inspectAttr(), react()],
+  plugins: [react()],
   worker: {
     format: 'es',
   },
@@ -18,4 +17,36 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-});
+  build: {
+    // Increase warning threshold (980KB is expected for a 3D app)
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        // Manual chunk splitting: keeps Three.js + satellite.js separate from React UI
+        // This allows the browser to cache heavy 3D libs independently of UI changes
+        manualChunks(id) {
+          // Three.js and related — heavy 3D core, changes rarely
+          if (id.includes('three')) {
+            return 'three'
+          }
+          // satellite.js — SGP4 propagation math, changes rarely
+          if (id.includes('satellite.js')) {
+            return 'satellite'
+          }
+          // React ecosystem — UI runtime
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor'
+          }
+          // Radix UI components (shadcn/ui) — large but cache-stable
+          if (id.includes('@radix-ui')) {
+            return 'radix-vendor'
+          }
+        },
+      },
+    },
+  },
+  // Optimize dependency pre-bundling
+  optimizeDeps: {
+    include: ['three', 'satellite.js'],
+  },
+})

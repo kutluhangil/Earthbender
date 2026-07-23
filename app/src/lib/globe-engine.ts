@@ -496,11 +496,11 @@ export class GlobeEngine {
     }
     this.earth.add(this.earthLandmarks)
 
-    // --- 8K Dynamic Cloud Layer ---
+    // --- Cloud Layer — 96×96 sphere (vs old 256×256 = 86% fewer vertices, no visible diff) ---
     const cloudsTex = loader.load(`${import.meta.env.BASE_URL}textures/earth-clouds-8k.jpg`)
     cloudsTex.colorSpace = THREE.SRGBColorSpace
-    cloudsTex.anisotropy = 16
-    const cloudGeo = new THREE.SphereGeometry(1.015, 256, 256)
+    cloudsTex.anisotropy = 8  // 8 is imperceptible vs 16 on clouds; saves GPU bandwidth
+    const cloudGeo = new THREE.SphereGeometry(1.015, 96, 96)
     cloudGeo.rotateX(Math.PI / 2)
     this.cloudsMat = new THREE.ShaderMaterial({
       uniforms: {
@@ -802,10 +802,11 @@ export class GlobeEngine {
     this.signalCone.visible = false
     this.scene.add(this.signalCone)
 
-    // --- selective bloom: threshold 1.0 keeps Earth/stars out of the glow ---
+    // --- Bloom at half resolution: saves 1 full-res render pass on every frame ---
+    // Bloom is blurry by nature so half-res is visually indistinguishable
     this.composer = new EffectComposer(this.renderer)
     this.composer.addPass(new RenderPass(this.scene, this.camera))
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(initW, initH), 0.55, 0.35, 1.0)
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(Math.ceil(initW / 2), Math.ceil(initH / 2)), 0.55, 0.35, 1.0)
     this.composer.addPass(this.bloom)
     this.composer.addPass(new OutputPass())
     this.applySize()
@@ -831,7 +832,8 @@ export class GlobeEngine {
       ? createRealisticMoonTexture(def.id)
       : loader.load(`${import.meta.env.BASE_URL}textures/${def.texture}`)
     tex.colorSpace = THREE.SRGBColorSpace
-    tex.anisotropy = 16
+    // Moons only need anisotropy=4; major planets use 8. Max (16) reserved for Earth.
+    tex.anisotropy = def.parent ? 4 : 8
     tex.minFilter = THREE.LinearMipmapLinearFilter
     tex.magFilter = THREE.LinearFilter
 
@@ -1489,12 +1491,18 @@ export class GlobeEngine {
   }
 
   private updateSun(simMs: number) {
-    const jd = satellite.jday(new Date(simMs))
+    // Reuse tmpVec1 to avoid allocating a new Vector3 every frame (60 fps = 60 allocs/s)
+    this.reusableDate.setTime(simMs)
+    const jd = satellite.jday(this.reusableDate)
     const sun = satellite.sunPos(jd).rsun
     const len = Math.sqrt(sun.x * sun.x + sun.y * sun.y + sun.z * sun.z) || 1
-    const sunDir = new THREE.Vector3(sun.x / len, sun.y / len, sun.z / len)
-    ;(this.earthMat.uniforms.uSunDir.value as THREE.Vector3).copy(sunDir)
-    this.sun.position.copy(sunDir.clone().multiplyScalar(120))
+    this.tmpVec1.set(sun.x / len, sun.y / len, sun.z / len)
+    ;(this.earthMat.uniforms.uSunDir.value as THREE.Vector3).copy(this.tmpVec1)
+    // Sync moon/planet sun direction uniforms if they exist
+    if (this.moonMat.uniforms.uSunDir) {
+      ;(this.moonMat.uniforms.uSunDir.value as THREE.Vector3).copy(this.tmpVec1)
+    }
+    this.sun.position.copy(this.tmpVec1).multiplyScalar(120)
     this.sun.rotation.y = (simMs / 1000) * 0.00005
   }
 
