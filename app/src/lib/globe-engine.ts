@@ -322,7 +322,6 @@ export class GlobeEngine {
   private moon: THREE.Mesh
   private moonMat: THREE.ShaderMaterial
   private moonOrbitLine: THREE.Line
-  private moonLandmarks: THREE.Group
   private earthLandmarks: THREE.Group
   private focusTarget: CelestialBodyId = 'earth'
   private planetRuntimes: PlanetRuntime[] = []
@@ -529,37 +528,7 @@ export class GlobeEngine {
     this.moon = new THREE.Mesh(moonGeo, this.moonMat)
     this.scene.add(this.moon)
 
-    // --- Moon Apollo Landing Sites & Landmarks ---
-    this.moonLandmarks = new THREE.Group()
-    const LUNAR_LANDMARKS = [
-      { name: 'Apollo 11', lat: 0.67, lon: 23.47 },
-      { name: 'Apollo 12', lat: -3.01, lon: -23.42 },
-      { name: 'Apollo 15', lat: 26.13, lon: 3.63 },
-      { name: 'Apollo 17', lat: 20.19, lon: 30.77 },
-      { name: 'Tycho', lat: -43.31, lon: -11.36 },
-      { name: 'Copernicus', lat: 9.62, lon: -20.08 },
-    ]
-    const R_MOON = 0.2727
-    const markTex = makeRingTexture()
-    for (const lm of LUNAR_LANDMARKS) {
-      const phi = (90 - lm.lat) * (Math.PI / 180)
-      const theta = (lm.lon + 180) * (Math.PI / 180)
-      const lx = -(R_MOON * 1.01 * Math.sin(phi) * Math.cos(theta))
-      const ly = R_MOON * 1.01 * Math.cos(phi)
-      const lz = R_MOON * 1.01 * Math.sin(phi) * Math.sin(theta)
-      const sprite = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: markTex,
-          color: 0xf59e0b,
-          transparent: true,
-          opacity: 0.85,
-        }),
-      )
-      sprite.position.set(lx, ly, lz)
-      sprite.scale.setScalar(0.018)
-      this.moonLandmarks.add(sprite)
-    }
-    this.moon.add(this.moonLandmarks)
+
 
     // Moon Orbit Path
     const MOON_ORBIT_R = 9.5
@@ -1321,9 +1290,8 @@ export class GlobeEngine {
 
   /** Nearest selectable satellite to a screen point (client coords). */
   private pick(clientX: number, clientY: number, thresholdPx: number): number | null {
-    // during a dataset swap the visible groups use the old index space —
-    // skip picking for that brief window rather than select the wrong object
     if (this.replacement) return null
+    if (this.focusTarget !== 'earth') return null // only pick Earth satellites when active target is Earth
     const rect = this.renderer.domElement.getBoundingClientRect()
     const x = clientX - rect.left
     const y = clientY - rect.top
@@ -1393,22 +1361,35 @@ export class GlobeEngine {
       collectPrt(this.planetRuntimes)
 
       const meshesToTest = pickables.map((p) => p.mesh)
-      const hits = raycaster.intersectObjects(meshesToTest)
+      const hits = raycaster.intersectObjects(meshesToTest, true)
 
       if (hits.length > 0) {
         const hit = hits[0]
-        const hitMesh = hit.object as THREE.Mesh
-        const match = pickables.find((p) => p.mesh === hitMesh)
-        if (match) {
+        const hitObject = hit.object
+        const siteFromSprite: LandingSite | null = (hitObject.userData as { site?: LandingSite })?.site ?? null
+
+        let topMesh: THREE.Mesh | null = null
+        let match: { mesh: THREE.Mesh; id: CelestialBodyId; name: string } | undefined
+        let curr: THREE.Object3D | null = hitObject
+        while (curr) {
+          match = pickables.find((p) => p.mesh === curr)
+          if (match) {
+            topMesh = match.mesh
+            break
+          }
+          curr = curr.parent
+        }
+
+        if (match && topMesh) {
           const pt = hit.point
-          const localPt = pt.clone().sub(hitMesh.position).applyMatrix4(hitMesh.matrixWorld.clone().invert()).normalize()
+          const localPt = pt.clone().sub(topMesh.position).applyMatrix4(topMesh.matrixWorld.clone().invert()).normalize()
           const lat = Math.asin(Math.min(Math.max(localPt.z, -1), 1)) * (180 / Math.PI)
           const lon = Math.atan2(localPt.y, localPt.x) * (180 / Math.PI)
-          this.pinMarker.position.copy(pt.clone().add(pt.clone().sub(hitMesh.position).normalize().multiplyScalar(0.01)))
+          this.pinMarker.position.copy(pt.clone().add(pt.clone().sub(topMesh.position).normalize().multiplyScalar(0.01)))
           this.pinMarker.visible = true
           const latStr = `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'}`
           const lonStr = `${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? 'E' : 'W'}`
-          const site = findLandingSiteNear(match.id, lat, lon)
+          const site = siteFromSprite ?? findLandingSiteNear(match.id, lat, lon)
 
           this.setFocusTarget(match.id)
           this.cb.onSelectBody?.(match.id)
