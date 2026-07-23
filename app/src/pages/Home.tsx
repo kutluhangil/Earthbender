@@ -629,16 +629,18 @@ export default function Home() {
       {/* ============ PLANET INFO CARD ============ */}
       {!selSat && (
         <>
-          {/* Desktop: top-right */}
+          {/* Desktop only: top-right panel */}
           <div className="hidden md:block absolute top-4 right-4 z-20">
             <PlanetInfoCard bodyId={focusBody} />
           </div>
-          {/* Mobile: controlled by FAB icon */}
-          <PlanetInfoCard
-            bodyId={focusBody}
-            mobileExpanded={mobilePlanetInfoOpen}
-            onMobileToggle={() => setMobilePlanetInfoOpen(false)}
-          />
+          {/* Mobile only: slide-up sheet controlled by 🪐 icon */}
+          <div className="md:hidden">
+            <PlanetInfoCard
+              bodyId={focusBody}
+              mobileExpanded={mobilePlanetInfoOpen}
+              onMobileToggle={() => setMobilePlanetInfoOpen(false)}
+            />
+          </div>
         </>
       )}
 
