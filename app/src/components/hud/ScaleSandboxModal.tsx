@@ -284,8 +284,8 @@ export default function ScaleSandboxModal({ onClose }: ScaleSandboxModalProps) {
   })
 
   return (
-    <div className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="relative w-full max-w-6xl rounded-2xl border border-cyan-500/30 bg-[#060a12]/95 p-6 text-slate-100 shadow-[0_0_60px_rgba(6,182,212,0.25)] flex flex-col max-h-[90vh]">
+    <div className="pointer-events-auto fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/85 p-0 md:p-4 backdrop-blur-xl animate-in fade-in duration-300">
+      <div className="relative w-full md:max-w-6xl rounded-t-2xl md:rounded-2xl border border-cyan-500/30 bg-[#060a12]/95 p-4 md:p-6 text-slate-100 shadow-[0_0_60px_rgba(6,182,212,0.25)] flex flex-col max-h-[92vh] md:max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
           <div>

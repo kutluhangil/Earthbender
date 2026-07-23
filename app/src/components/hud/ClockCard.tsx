@@ -18,12 +18,23 @@ export default function ClockCard({ clock }: ClockCardProps) {
   const live =
     clock.playing && clock.speed === 1 && now > 0 && Math.abs(now - tick.wall) < 2500
 
+  const statusDot = !clock.playing ? (
+    <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-400" />
+  ) : live ? (
+    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+  ) : (
+    <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
+  )
+
   return (
-    <div className="pointer-events-auto flex items-center gap-2 rounded-xl border border-white/10 bg-[#0a0e14]/70 px-2.5 py-2 backdrop-blur-xl md:gap-4 md:px-5 md:py-2.5">
-      <div className="font-mono text-base font-medium tabular-nums tracking-wider text-slate-100 md:text-2xl">
+    <div className="pointer-events-auto flex items-center gap-2 rounded-xl border border-white/10 bg-[#0a0e14]/70 px-2.5 py-1.5 backdrop-blur-xl md:gap-4 md:px-5 md:py-2.5">
+      {/* Time — always visible */}
+      <div className="font-mono text-sm font-medium tabular-nums tracking-wider text-slate-100 md:text-2xl">
         {now > 0 ? formatClockTime(now) : '--:--:--'}
       </div>
-      <div className="text-right">
+
+      {/* Date + status — hidden on mobile to save space */}
+      <div className="hidden md:block text-right">
         <div className="font-mono text-[9px] tracking-wider text-slate-400 md:text-[11px]">
           {now > 0 ? formatClockDate(now) : ''}
         </div>
@@ -47,6 +58,11 @@ export default function ClockCard({ clock }: ClockCardProps) {
             {clock.speed}× TIME
           </div>
         )}
+      </div>
+
+      {/* Mobile: compact status dot only */}
+      <div className="flex items-center md:hidden">
+        {statusDot}
       </div>
     </div>
   )

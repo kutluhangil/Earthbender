@@ -55,7 +55,9 @@ export default function DetailPanel({
   return (
     <div
       className="pointer-events-auto absolute z-20 rounded-xl border border-white/10 bg-[#0a0e14]/80 backdrop-blur-xl
-        max-md:inset-x-3 max-md:bottom-[92px] max-md:max-h-[46vh] max-md:overflow-y-auto
+        /* Mobile: bottom sheet above time controller */
+        max-md:inset-x-3 max-md:bottom-[148px] max-md:max-h-[44vh] max-md:overflow-y-auto
+        /* Desktop: right side panel */
         md:right-7 md:top-1/2 md:w-[300px] md:-translate-y-1/2"
     >
       <div className="flex items-start justify-between gap-2 px-4 pt-4">

@@ -51,7 +51,7 @@ export default function LayerPanel({
   const currentLabel = focusBody === 'earth' ? '🌍 Earth' : focusBody === 'moon' ? '🌕 Moon' : focusBody === 'sun' ? '☀️ Sun' : currentDef ? `${currentDef.emoji} ${currentDef.name}` : focusBody
 
   return (
-    <div className="pointer-events-auto w-[248px] rounded-xl border border-white/10 bg-[#0a0e14]/80 px-4 py-3.5 backdrop-blur-xl max-md:w-full space-y-3">
+    <div className="pointer-events-auto w-full md:w-[248px] rounded-xl border border-white/10 bg-[#0a0e14]/80 px-4 py-3.5 backdrop-blur-xl space-y-3">
       {/* Top Utility Controls */}
       <div className="flex gap-1">
         <button
@@ -105,7 +105,7 @@ export default function LayerPanel({
 
         {/* Expanded Solar System Grid */}
         {showAllPlanets && (
-          <div className="max-h-[160px] overflow-y-auto space-y-1 pr-1 text-[11px] scrollbar-thin scrollbar-thumb-white/10">
+          <div className="max-h-[30vh] md:max-h-[160px] overflow-y-auto space-y-1 pr-1 text-[11px] scrollbar-thin scrollbar-thumb-white/10">
             {PLANETS.map((p) => (
               <div key={p.id} className="space-y-0.5">
                 <button
@@ -197,7 +197,7 @@ export default function LayerPanel({
         <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-slate-500">
           Earth Satellites
         </div>
-        <div className="space-y-0.5 max-h-[140px] overflow-y-auto pr-1">
+        <div className="space-y-0.5 max-h-[20vh] md:max-h-[140px] overflow-y-auto pr-1">
           {UI_GROUPS.map((g, i) => (
             <button
               key={g.key}
