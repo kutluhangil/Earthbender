@@ -347,6 +347,8 @@ export class GlobeEngine {
   private constellationGroup: THREE.Group | null = null
   private asteroidSwarm: AsteroidSwarm | null = null
   private lastFocusPos: THREE.Vector3 | null = null
+  private starsMat: THREE.PointsMaterial | null = null
+  public currentTheme: 'dark' | 'light' = 'dark'
   public isCinematicTourActive: boolean = false
   public tourTargetIndex: number = 0
   private tourStartTime: number = 0
@@ -1052,6 +1054,7 @@ export class GlobeEngine {
       opacity: 0.45,
       depthWrite: false,
     })
+    this.starsMat = m
     const p = new THREE.Points(g, m)
     p.frustumCulled = false
     return p
@@ -1806,6 +1809,25 @@ export class GlobeEngine {
     this.flyToStartTarget.copy(this.controls.target)
   }
 
+  setTheme(theme: 'dark' | 'light') {
+    this.currentTheme = theme
+    if (theme === 'light') {
+      // Bone White / Ivory Space Theme (#f4efe6)
+      this.scene.background = new THREE.Color(0xf4efe6)
+      if (this.starsMat) {
+        this.starsMat.color.setHex(0x334155) // Dark slate stars for bone white space
+        this.starsMat.opacity = 0.75
+      }
+    } else {
+      // Deep Dark Space Theme
+      this.scene.background = null
+      if (this.starsMat) {
+        this.starsMat.color.setHex(0xffffff)
+        this.starsMat.opacity = 0.45
+      }
+    }
+  }
+
   setPlanetaryOrbitsVisible(v: boolean) {
     if (this.moonOrbitLine) this.moonOrbitLine.visible = v
     for (const rt of this.planetRuntimes) {
@@ -1834,13 +1856,15 @@ export class GlobeEngine {
   private makeProbes(): THREE.Group {
     const group = new THREE.Group()
     for (const p of DEEP_SPACE_PROBES) {
-      const px = Math.cos(p.angleRad) * p.distanceAu
-      const py = Math.sin(p.angleRad) * Math.cos(p.inclinationRad) * p.distanceAu
-      const pz = Math.sin(p.angleRad) * Math.sin(p.inclinationRad) * p.distanceAu
+      // Ensure all probes sit far out in deep space (e.g. at least 22 AU), avoiding Earth's core
+      const dist = Math.max(22.0, p.distanceAu)
+      const px = Math.cos(p.angleRad) * dist
+      const py = Math.sin(p.angleRad) * Math.cos(p.inclinationRad) * dist
+      const pz = Math.sin(p.angleRad) * Math.sin(p.inclinationRad) * dist
 
-      // Deep space probe 3D marker (Amber Gold / Silver)
-      const geo = new THREE.SphereGeometry(0.25, 16, 16)
-      const mat = new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+      // Deep space probe 3D marker (Cyan / Silver beacon)
+      const geo = new THREE.SphereGeometry(0.08, 16, 16)
+      const mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
       const mesh = new THREE.Mesh(geo, mat)
       mesh.position.set(px, py, pz)
 

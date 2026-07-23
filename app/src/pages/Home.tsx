@@ -77,6 +77,7 @@ export default function Home() {
   const [probesVisible, setProbesVisible] = useState(false)
   const [constellationsVisible, setConstellationsVisible] = useState(false)
   const [asteroidsVisible, setAsteroidsVisible] = useState(false)
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const audioSynthRef = useRef(new SpaceAudioSynth())
 
   const satsRef = useRef<SatInfo[]>(EMPTY_SATS)
@@ -193,6 +194,14 @@ export default function Home() {
     setAsteroidsVisible((v) => {
       const next = !v
       engineRef.current?.setAsteroidsVisible(next)
+      return next
+    })
+  }, [])
+
+  const handleToggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      engineRef.current?.setTheme(next)
       return next
     })
   }, [])
@@ -437,14 +446,25 @@ export default function Home() {
       )}
 
       {/* layers: static panel on desktop */}
-      {/* cosmic tour autopilot: top-left under IdentityBlock to avoid overlapping top clock */}
-      <div className="absolute left-4 top-[72px] z-20 md:left-7 md:top-[76px]">
+      {/* cosmic tour autopilot & theme switcher */}
+      <div className="absolute left-4 top-[72px] z-20 flex flex-wrap items-center gap-2 md:left-7 md:top-[76px]">
         <CosmicTourControls
           onSelectBody={handleSelectBody}
           currentBodyId={focusBody}
           onStartTour={() => engineRef.current?.startCinematicTour()}
           onStopTour={() => engineRef.current?.stopCinematicTour()}
         />
+        <button
+          onClick={handleToggleTheme}
+          className={`pointer-events-auto flex items-center gap-2 rounded-xl border px-3.5 py-2 font-mono text-xs font-semibold backdrop-blur-xl transition-all shadow-md ${
+            theme === 'light'
+              ? 'border-amber-900/20 bg-[#f8f6f0]/95 text-amber-950 hover:bg-[#ffffff] shadow-[0_0_15px_rgba(217,119,6,0.15)]'
+              : 'border-cyan-500/30 bg-[#0a0e17]/85 text-cyan-300 hover:text-cyan-100 shadow-[0_0_20px_rgba(6,182,212,0.2)]'
+          }`}
+          title="Karanlık Uzay / Kemik Beyazı Teması Değiştir"
+        >
+          {theme === 'light' ? '🦴 KEMİK BEYAZI UZAY' : '🌌 KARANLIK UZAY'}
+        </button>
       </div>
 
       {/* left panel: layers */}
