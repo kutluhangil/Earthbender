@@ -16,6 +16,18 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
+import { PLANETS, type CelestialBodyId, type PlanetDef } from './planets'
+
+/** Runtime state for a rendered planet or moon */
+interface PlanetRuntime {
+  def: PlanetDef
+  mesh: THREE.Mesh
+  mat: THREE.ShaderMaterial
+  atmo?: THREE.Mesh
+  orbitLine?: THREE.Line
+  ring?: THREE.Mesh
+  moons: PlanetRuntime[]
+}
 
 export interface EngineCallbacks {
   getSimTime: () => number // ms epoch (simulated)
@@ -308,7 +320,8 @@ export class GlobeEngine {
   private moonOrbitLine: THREE.Line
   private moonLandmarks: THREE.Group
   private earthLandmarks: THREE.Group
-  private focusTarget: 'earth' | 'moon' | 'sun' = 'earth'
+  private focusTarget: CelestialBodyId = 'earth'
+  private planetRuntimes: PlanetRuntime[] = []
   private groups: GroupRuntime[] = []
   /** hidden replacement set during a dataset swap (old groups keep rendering) */
   private replacement: GroupRuntime[] | null = null
@@ -648,6 +661,11 @@ export class GlobeEngine {
     this.sunCorona = new THREE.Mesh(coronaGeo, coronaMat)
     this.sun.add(this.sunCorona)
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // SOLAR SYSTEM PLANETS & MOONS — dynamic from PLANETS config
+    // ═══════════════════════════════════════════════════════════════════════
+    this.planetRuntimes = PLANETS.map((def) => this.createPlanet(def, loader))
+
     this.scene.add(this.makeStars())
 
     // --- selection marker ---
@@ -773,6 +791,143 @@ export class GlobeEngine {
     document.addEventListener('visibilitychange', this.onVisibility)
 
     this.loop()
+  }
+
+  // ─── Planet Factory ─────────────────────────────────────────────────────
+  private createPlanet(def: PlanetDef, loader: THREE.TextureLoader): PlanetRuntime {
+    const tex = loader.load(`${import.meta.env.BASE_URL}textures/${def.texture}`)
+    tex.colorSpace = THREE.SRGBColorSpace
+    tex.anisotropy = 16
+    tex.minFilter = THREE.LinearMipmapLinearFilter
+    tex.magFilter = THREE.LinearFilter
+
+    const geo = new THREE.SphereGeometry(def.radius, def.segments, def.segments)
+    geo.rotateX(Math.PI / 2) // poles -> +z
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTex: { value: tex },
+        uSunDir: { value: new THREE.Vector3(1, 0, 0) },
+        uTime: { value: 0 },
+      },
+      vertexShader: /* glsl */ `
+        varying vec2 vUv;
+        varying vec3 vNormalW;
+        varying vec3 vPosW;
+        void main() {
+          vUv = uv;
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vPosW = wp.xyz;
+          vNormalW = normalize(mat3(modelMatrix) * normal);
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform sampler2D uTex;
+        uniform vec3 uSunDir;
+        uniform float uTime;
+        varying vec2 vUv;
+        varying vec3 vNormalW;
+        varying vec3 vPosW;
+        void main() {
+          vec3 texCol = texture2D(uTex, vUv).rgb;
+          float lit = dot(vNormalW, uSunDir);
+          float day = smoothstep(-0.15, 0.35, lit);
+          vec3 col = texCol * (0.06 + 0.94 * day);
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `,
+    })
+    const mesh = new THREE.Mesh(geo, mat)
+    mesh.rotation.x = def.axialTilt * (Math.PI / 180)
+    this.scene.add(mesh)
+
+    // Atmosphere rim glow
+    let atmo: THREE.Mesh | undefined
+    if (def.atmosphereColor) {
+      const [ar, ag, ab] = def.atmosphereColor
+      const atmoGeo = new THREE.SphereGeometry(def.radius * 1.12, 48, 48)
+      const atmoMat = new THREE.ShaderMaterial({
+        uniforms: {},
+        vertexShader: /* glsl */ `
+          varying vec3 vNormalW; varying vec3 vPosW;
+          void main() {
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vPosW = wp.xyz; vNormalW = normalize(mat3(modelMatrix) * normal);
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          varying vec3 vNormalW; varying vec3 vPosW;
+          void main() {
+            vec3 v = normalize(cameraPosition - vPosW);
+            float rim = pow(max(0.6 - dot(vNormalW, v), 0.0), 2.5);
+            gl_FragColor = vec4(${ar.toFixed(2)}, ${ag.toFixed(2)}, ${ab.toFixed(2)}, 1.0) * rim * ${def.atmosphereIntensity.toFixed(1)};
+          }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+        depthWrite: false,
+      })
+      atmo = new THREE.Mesh(atmoGeo, atmoMat)
+      mesh.add(atmo)
+    }
+
+    // Orbit line around the Sun
+    const orbitPts: THREE.Vector3[] = []
+    const orbSegs = 128
+    const incRad = def.inclination * (Math.PI / 180)
+    for (let i = 0; i <= orbSegs; i++) {
+      const a = (i / orbSegs) * Math.PI * 2
+      orbitPts.push(new THREE.Vector3(
+        Math.cos(a) * def.orbitRadius,
+        Math.sin(a) * Math.cos(incRad) * def.orbitRadius,
+        Math.sin(a) * Math.sin(incRad) * def.orbitRadius,
+      ))
+    }
+    const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPts)
+    const orbitLine = new THREE.Line(
+      orbitGeo,
+      new THREE.LineBasicMaterial({
+        color: 0x556688,
+        transparent: true,
+        opacity: 0.18,
+        blending: THREE.AdditiveBlending,
+      }),
+    )
+    this.scene.add(orbitLine)
+
+    // Saturn ring
+    let ring: THREE.Mesh | undefined
+    if (def.hasRing) {
+      const ringGeo = new THREE.RingGeometry(def.radius * 1.3, def.radius * 2.3, 128)
+      const ringTex = loader.load(`${import.meta.env.BASE_URL}textures/saturn-ring-alpha.png`)
+      ringTex.colorSpace = THREE.SRGBColorSpace
+      const ringMat = new THREE.MeshBasicMaterial({
+        map: ringTex,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+        blending: THREE.NormalBlending,
+      })
+      ring = new THREE.Mesh(ringGeo, ringMat)
+      ring.rotation.x = Math.PI / 2 // flat on XY plane, then parent tilt applies
+      mesh.add(ring)
+    }
+
+    // Moons (recursive, orbit around parent planet)
+    const moonRTs: PlanetRuntime[] = []
+    for (const moonDef of def.moons ?? []) {
+      const moonRT = this.createPlanet(moonDef, loader)
+      // Remove from scene root — will be positioned relative to parent in loop
+      this.scene.remove(moonRT.mesh)
+      // Remove orbit line from scene (moon orbits are relative)
+      if (moonRT.orbitLine) this.scene.remove(moonRT.orbitLine)
+      moonRTs.push(moonRT)
+    }
+
+    return { def, mesh, mat, atmo, orbitLine, ring, moons: moonRTs }
   }
 
   private makeStars(): THREE.Points {
@@ -1138,31 +1293,21 @@ export class GlobeEngine {
       )
       const raycaster = new THREE.Raycaster()
       raycaster.setFromCamera(mouse, this.camera)
-      const targetMesh =
-        this.focusTarget === 'sun'
-          ? this.sun
-          : this.focusTarget === 'moon'
-          ? this.moon
-          : this.earth
+      const targetObj = this.getTargetMeshAndName(this.focusTarget)
+      const targetMesh = targetObj ? targetObj.mesh : this.earth
+      const targetName = targetObj ? targetObj.name : '🌍 EARTH'
       const hits = raycaster.intersectObject(targetMesh)
       if (hits.length > 0) {
         const hit = hits[0]
         const pt = hit.point
-        const isSun = targetMesh === this.sun
-        const isMoon = targetMesh === this.moon
-        const localPt = isSun
-          ? pt.clone().sub(this.sun.position).applyMatrix4(this.sun.matrixWorld.clone().invert()).normalize()
-          : isMoon
-          ? pt.clone().sub(this.moon.position).applyMatrix4(this.moon.matrixWorld.clone().invert()).normalize()
-          : pt.clone().applyMatrix4(this.earth.matrixWorld.clone().invert()).normalize()
+        const localPt = pt.clone().sub(targetMesh.position).applyMatrix4(targetMesh.matrixWorld.clone().invert()).normalize()
         const lat = Math.asin(Math.min(Math.max(localPt.z, -1), 1)) * (180 / Math.PI)
         const lon = Math.atan2(localPt.y, localPt.x) * (180 / Math.PI)
         this.pinMarker.position.copy(pt.clone().add(pt.clone().sub(targetMesh.position).normalize().multiplyScalar(0.01)))
         this.pinMarker.visible = true
         const latStr = `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'}`
         const lonStr = `${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? 'E' : 'W'}`
-        const prefix = isSun ? '☀️ SUN' : isMoon ? '🌕 MOON' : '🌍 EARTH'
-        this.cb.onPinSelected?.({ lat, lon, text: `${prefix}: ${latStr}, ${lonStr}` })
+        this.cb.onPinSelected?.({ lat, lon, text: `${targetName}: ${latStr}, ${lonStr}` })
       }
     } else {
       this.pinMarker.visible = false
@@ -1270,11 +1415,17 @@ export class GlobeEngine {
       this.earthMat.uniforms.uSunDir.value as THREE.Vector3,
     )
 
-    // Camera Focus Lerping
-    if (this.focusTarget === 'sun') {
-      this.controls.target.lerp(this.sun.position, 0.08)
-    } else if (this.focusTarget === 'moon') {
-      this.controls.target.lerp(this.moon.position, 0.08)
+    // ── Planet Orbit Animation ────────────────────────────────────────────
+    const sunPos = this.sun.position
+    const sunDir = this.earthMat.uniforms.uSunDir.value as THREE.Vector3
+    for (const prt of this.planetRuntimes) {
+      this.animatePlanet(prt, simS, sunPos, sunDir, null)
+    }
+
+    // Camera Focus Lerping — supports all celestial bodies
+    const focusPt = this.getFocusPosition()
+    if (focusPt) {
+      this.controls.target.lerp(focusPt, 0.08)
     } else if (this.selected === null && !this.follow) {
       this.controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.08)
     }
@@ -1368,11 +1519,65 @@ export class GlobeEngine {
     this.monitorPerf(performance.now())
   }
 
-  setFocusTarget(target: 'earth' | 'moon' | 'sun') {
+  private animatePlanet(
+    prt: PlanetRuntime,
+    simS: number,
+    sunPos: THREE.Vector3,
+    sunDir: THREE.Vector3,
+    parentPos: THREE.Vector3 | null,
+  ) {
+    const { def, mesh, mat, moons } = prt
+    const periodSec = def.orbitPeriodDays * 86400
+    const angle = ((simS / periodSec) * Math.PI * 2) % (Math.PI * 2)
+    const incRad = def.inclination * (Math.PI / 180)
+
+    const relX = Math.cos(angle) * def.orbitRadius
+    const relY = Math.sin(angle) * Math.cos(incRad) * def.orbitRadius
+    const relZ = Math.sin(angle) * Math.sin(incRad) * def.orbitRadius
+
+    const origin = parentPos ?? sunPos
+    mesh.position.set(origin.x + relX, origin.y + relY, origin.z + relZ)
+
+    const rotSign = def.retrograde ? -1 : 1
+    const rotSpeed = (2 * Math.PI) / (def.rotationPeriodHours * 3600)
+    mesh.rotation.z = (simS * rotSpeed * rotSign) % (Math.PI * 2)
+
+    mat.uniforms.uTime.value = performance.now() * 0.001
+    ;(mat.uniforms.uSunDir.value as THREE.Vector3).copy(sunDir)
+
+    for (const m of moons) {
+      this.animatePlanet(m, simS, sunPos, sunDir, mesh.position)
+    }
+  }
+
+  private getTargetMeshAndName(id: CelestialBodyId): { mesh: THREE.Mesh; name: string } | null {
+    if (id === 'earth') return { mesh: this.earth, name: '🌍 EARTH' }
+    if (id === 'moon') return { mesh: this.moon, name: '🌕 MOON' }
+    if (id === 'sun') return { mesh: this.sun, name: '☀️ SUN' }
+
+    const findInRuntimes = (list: PlanetRuntime[]): { mesh: THREE.Mesh; name: string } | null => {
+      for (const prt of list) {
+        if (prt.def.id === id) {
+          return { mesh: prt.mesh, name: `${prt.def.emoji} ${prt.def.name.toUpperCase()}` }
+        }
+        const sub = findInRuntimes(prt.moons)
+        if (sub) return sub
+      }
+      return null
+    }
+    return findInRuntimes(this.planetRuntimes)
+  }
+
+  private getFocusPosition(): THREE.Vector3 | null {
+    const target = this.getTargetMeshAndName(this.focusTarget)
+    return target ? target.mesh.position : null
+  }
+
+  setFocusTarget(target: CelestialBodyId) {
     this.focusTarget = target
   }
 
-  getFocusTarget(): 'earth' | 'moon' | 'sun' {
+  getFocusTarget(): CelestialBodyId {
     return this.focusTarget
   }
 

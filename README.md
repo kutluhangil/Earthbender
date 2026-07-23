@@ -20,9 +20,9 @@
 ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝╚═╝  ╚═══╝
 ```
 
-### **Earthbender** — Gerçek Zamanlı Yörünge & 3D Gök Cismi Simülatörü
+### **Earthbender** — Gerçek Zamanlı Güneş Sistemi & 3D Gök Cismi Simülatörü
 
-**8K Fotogerçekçi Gezegenler** · 10,000+ Canlı Uydu · Dünya, Ay & Güneş · WebGL & Three.js
+**8K/4K/2K Fotogerçekçi Gezegenler & Uydular** · 10,000+ Canlı Uydu · Güneş, Merkür, Venüs, Dünya, Mars, Jüpiter, Satürn, Uranüs, Neptün, Plüton · WebGL & Three.js
 
 [🚀 Canlı Uygulama](http://localhost:3001) · [📡 CelesTrak TLE API](https://celestrak.org/) · [⚡ Satellite.js](https://github.com/shashwatak/satellite-js)
 
@@ -32,9 +32,9 @@
 
 ## ✦ Genel Bakış
 
-**Earthbender**, Dünya etrafındaki 10.000'den fazla uydunun (Starlink, ISS, Hubble, GPS, enkazlar) yörüngelerini **SGP4 uzay fiziği hesaplamaları** ile gerçek zamanlı olarak 3D uzay ortamında simüle eden fotogerçekçi bir uzay gözlem platformudur. 
+**Earthbender**, Güneş Sistemi'nin tüm gezegenlerini ve önemli uydularını **3D Globe** olarak simüle ederken, Dünya etrafındaki 10.000'den fazla uydunun (Starlink, ISS, Hubble, GPS, enkazlar) yörüngelerini **SGP4 uzay fiziği hesaplamaları** ile gerçek zamanlı olarak 3D uzay ortamında sunan fotogerçekçi bir uzay gözlem platformudur. 
 
-Platform; **Dünya (Earth)**, **Ay (Moon)** ve **Güneş (Sun)** gök cisimlerini 8K yüksek çözünürlüklü kaplamalar, özel GLSL plazma/atmosfer shader'ları ve sinematik kamera takibi ile 3D ortamda sunar.
+Platform; **Güneş**, **Merkür**, **Venüs**, **Dünya**, **Ay**, **Mars (Phobos & Deimos)**, **Jüpiter (Io, Europa, Ganymede, Callisto)**, **Satürn (3D Halka, Titan, Enceladus)**, **Uranüs (Titania, Oberon)**, **Neptün (Triton)** ve **Plüton** gök cisimlerini yüksek çözünürlüklü kaplamalar, özel GLSL plazma/atmosfer shader'ları, halka geometrileri ve sinematik kamera takibi ile 3D ortamda sunar.
 
 > **Tüm yörüngeler gerçektir.** Uyduların anlık ECI konumları NORAD TLE verileri üzerinden `satellite.js` ve Web Workers ile mikro-saniyelik hassasiyetle hesaplanır.
 
@@ -44,14 +44,16 @@ Platform; **Dünya (Earth)**, **Ay (Moon)** ve **Güneş (Sun)** gök cisimlerin
 
 | Özellik | Açıklama |
 |--------|----------|
+| 🪐 **3D Güneş Sistemi (8 Gezegen + Plüton + 12 Uydu)** | Merkür'den Plüton'a kadar tüm gezegenler ve uyduları 3D mesh ve orbital animasyonlarla sahnede. |
 | 🌍 **8K Fotogerçekçi Dünya** | 8192x4096 Gündüz, Gece, Bulut, Topografya Bump & Speküler Yansıma katmanları. |
-| 🌕 **8K Ay & Krater Topografyası** | Ay 3D küresi, 8K Bump map, regolit yansıması ve Apollo İniş Bölgeleri. |
+| 🌕 **8K Ay & Krater Topografyası** | Ay 3D küresi, 8K Bump map, regolit yansıması ve Apollo İniş Bölegeleri. |
 | ☀️ **8K 3D Güneş & Canlı Plazma** | GLSL plazma akışı, fotosfer fırtına animasyonu ve Hacimsel Korona Tacı. |
+| 🪐 **3D Satürn Halkası** | Şeffaf alpha kanallı özel 3D Ring geometry ile detaylı Satürn halka sistemi. |
 | 🛰️ **10,000+ Canlı Uydu Takibi** | Starlink, ISS, Hubble, GPS ve uzay enkazlarının canlı SGP4 yörünge simülasyonu. |
 | 📡 **3D Sinyal Kapsama Konisi** | Seçilen uydunun kapsama alanını ve radyo frekans konisini Dünya üzerine çizer. |
 | 🏙️ **Metropol & İniş Bölgeleri** | İstanbul, Tokyo, London, NY ve Apollo 11/12/15/17 iniş sahaları 3D pin etiketleri. |
 | 🌍 **23.44° Gerçek Eksen Eğikliği** | Astronomik mevsimsel Güneş ışığı açısı ve kutup gecesi/gündüzü fiziği. |
-| 🎥 **Sinematik Uydu Uçuş Kamerası** | Uydunun veya gök cisminin yörünge hareketine yumuşak ivmeyle kitlenen kamera. |
+| 🎥 **Sinematik Gök Cismi Kamerası** | Seçilen gezegene, uyduya veya Güneş'e yumuşak ivmeyle kitlenen sinematik kamera. |
 | ⏱️ **Zaman Makinesi & Zaman Çubuğu** | Zamanı ileri/geri sarma, simülasyon hızını ayarlama ve anlık TLE güncelleme. |
 
 ---
@@ -74,13 +76,13 @@ Veri Kaynağı →  CelesTrak NORAD Live TLE Data (Active + Debris)
 Earthbender/
 ├── app/
 │   ├── public/
-│   │   ├── textures/       # 8K Earth Day, Night, Clouds, Bump, Moon & Sun maps
+│   │   ├── textures/       # 8K/4K/2K Earth, Moon, Sun & All Planets + Moons maps
 │   │   └── data/           # Live NORAD TLE Data Snapshots
 │   ├── src/
 │   │   ├── components/
 │   │   │   └── hud/        # IdentityBlock, ClockCard, SearchBox, LayerPanel, DetailPanel
 │   │   ├── hooks/          # useTleData, useSimClock, usePropagator
-│   │   ├── lib/            # globe-engine.ts (3D Core Engine) · satellites.ts
+│   │   ├── lib/            # globe-engine.ts (3D Core Engine) · planets.ts · satellites.ts
 │   │   ├── workers/        # propagator.worker.ts (Background SGP4 Calculation)
 │   │   └── pages/          # Home.tsx (Main 3D Viewport)
 ```

@@ -3,6 +3,7 @@ import * as satellite from 'satellite.js'
 import { GlobeEngine } from '@/lib/globe-engine'
 import { UI_GROUPS } from '@/lib/satellites'
 import type { SatInfo } from '@/lib/satellites'
+import type { CelestialBodyId } from '@/lib/planets'
 import { useSimClock } from '@/hooks/useSimClock'
 import { useTleData } from '@/hooks/useTleData'
 import { usePropagator } from '@/hooks/usePropagator'
@@ -59,7 +60,7 @@ export default function Home() {
   const [showOrbit, setShowOrbit] = useState(true)
   const [showFoot, setShowFoot] = useState(true)
   const [follow, setFollow] = useState(false)
-  const [focusBody, setFocusBody] = useState<'earth' | 'moon' | 'sun'>('earth')
+  const [focusBody, setFocusBody] = useState<CelestialBodyId>('earth')
   const [selectedPin, setSelectedPin] = useState<{ lat: number; lon: number; text: string } | null>(null)
   const [fps, setFps] = useState(0)
   const [layersOpen, setLayersOpen] = useState(false)
@@ -140,7 +141,7 @@ export default function Home() {
     [getRec],
   )
 
-  const handleSelectBody = useCallback((body: 'earth' | 'moon' | 'sun') => {
+  const handleSelectBody = useCallback((body: CelestialBodyId) => {
     setFocusBody(body)
     engineRef.current?.setFocusTarget(body)
   }, [])
