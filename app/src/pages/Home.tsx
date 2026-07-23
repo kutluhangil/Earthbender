@@ -16,6 +16,9 @@ import DetailPanel from '@/components/hud/DetailPanel'
 import type { Telemetry } from '@/components/hud/DetailPanel'
 import PlanetInfoCard from '@/components/hud/PlanetInfoCard'
 import CinematicTitleOverlay from '@/components/hud/CinematicTitleOverlay'
+import CosmicTourControls from '@/components/hud/CosmicTourControls'
+import ScaleSandboxModal from '@/components/hud/ScaleSandboxModal'
+import { SpaceAudioSynth } from '@/lib/audio-synth'
 import FallbackTable from '@/components/FallbackTable'
 
 const EARTH_R = 6371
@@ -66,6 +69,12 @@ export default function Home() {
   const [selectedPin, setSelectedPin] = useState<{ lat: number; lon: number; text: string } | null>(null)
   const [fps, setFps] = useState(0)
   const [layersOpen, setLayersOpen] = useState(false)
+  const [showScaleModal, setShowScaleModal] = useState(false)
+  const [audioPlaying, setAudioPlaying] = useState(false)
+  const [asteroidsVisible, setAsteroidsVisible] = useState(true)
+  const [probesVisible, setProbesVisible] = useState(true)
+  const [constellationsVisible, setConstellationsVisible] = useState(true)
+  const audioSynthRef = useRef(new SpaceAudioSynth())
 
   const satsRef = useRef<SatInfo[]>(EMPTY_SATS)
   const noradMapRef = useRef(new Map<number, number>())
@@ -146,6 +155,35 @@ export default function Home() {
   const handleSelectBody = useCallback((body: CelestialBodyId) => {
     setFocusBody(body)
     engineRef.current?.setFocusTarget(body)
+  }, [])
+
+  const handleToggleAudio = useCallback(() => {
+    const playing = audioSynthRef.current.toggle()
+    setAudioPlaying(playing)
+  }, [])
+
+  const handleToggleAsteroids = useCallback(() => {
+    setAsteroidsVisible((v) => {
+      const next = !v
+      engineRef.current?.setAsteroidsVisible(next)
+      return next
+    })
+  }, [])
+
+  const handleToggleProbes = useCallback(() => {
+    setProbesVisible((v) => {
+      const next = !v
+      engineRef.current?.setProbesVisible(next)
+      return next
+    })
+  }, [])
+
+  const handleToggleConstellations = useCallback(() => {
+    setConstellationsVisible((v) => {
+      const next = !v
+      engineRef.current?.setConstellationsVisible(next)
+      return next
+    })
   }, [])
 
   // ---- selection (NORAD-stable) ----
@@ -387,6 +425,12 @@ export default function Home() {
       )}
 
       {/* layers: static panel on desktop */}
+      {/* cosmic tour autopilot */}
+      <div className="absolute top-4 left-1/2 z-20 -translate-x-1/2">
+        <CosmicTourControls onSelectBody={handleSelectBody} currentBodyId={focusBody} />
+      </div>
+
+      {/* left panel: layers */}
       <div className="absolute bottom-7 left-7 z-20 max-md:hidden">
         <LayerPanel
           counts={dataset?.counts ?? UI_GROUPS.map(() => 0)}
@@ -394,6 +438,15 @@ export default function Home() {
           onToggle={toggleGroup}
           focusBody={focusBody}
           onSelectBody={handleSelectBody}
+          onToggleScaleSandbox={() => setShowScaleModal(true)}
+          onToggleAudio={handleToggleAudio}
+          audioPlaying={audioPlaying}
+          onToggleAsteroids={handleToggleAsteroids}
+          asteroidsVisible={asteroidsVisible}
+          onToggleProbes={handleToggleProbes}
+          probesVisible={probesVisible}
+          onToggleConstellations={handleToggleConstellations}
+          constellationsVisible={constellationsVisible}
         />
       </div>
 
@@ -452,6 +505,11 @@ export default function Home() {
 
       {/* Sci-Fi / Star Wars Arrival Title Overlay */}
       <CinematicTitleOverlay bodyId={focusBody} />
+
+      {/* Scale Comparison Sandbox Modal */}
+      {showScaleModal && (
+        <ScaleSandboxModal onClose={() => setShowScaleModal(false)} />
+      )}
 
       {degraded && (
         <div className="absolute bottom-[92px] right-4 z-20 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-[11px] text-amber-200">

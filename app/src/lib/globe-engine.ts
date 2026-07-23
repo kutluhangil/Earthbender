@@ -17,6 +17,9 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { PLANETS, type CelestialBodyId, type PlanetDef } from './planets'
+import { generateAsteroidBelts } from './asteroids'
+import { DEEP_SPACE_PROBES } from './probes'
+import { CONSTELLATIONS } from './constellations'
 
 /** Runtime state for a rendered planet or moon */
 interface PlanetRuntime {
@@ -323,6 +326,10 @@ export class GlobeEngine {
   private earthLandmarks: THREE.Group
   private focusTarget: CelestialBodyId = 'earth'
   private planetRuntimes: PlanetRuntime[] = []
+  private asteroidPoints: THREE.Points | null = null
+  private kuiperPoints: THREE.Points | null = null
+  private probeGroup: THREE.Group | null = null
+  private constellationGroup: THREE.Group | null = null
   private lastFocusPos: THREE.Vector3 | null = null
   private flyToActive = false
   private flyToStartTime = 0
@@ -673,6 +680,18 @@ export class GlobeEngine {
     this.planetRuntimes = PLANETS.map((def) => this.createPlanet(def, loader))
 
     this.scene.add(this.makeStars())
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COSMIC ENVIRONMENTS — Asteroit Belts, Deep Space Probes, Constellations
+    // ═══════════════════════════════════════════════════════════════════════
+    this.asteroidPoints = this.makeAsteroids()
+    this.kuiperPoints = this.makeKuiper()
+    this.probeGroup = this.makeProbes()
+    this.constellationGroup = this.makeConstellations()
+    this.scene.add(this.asteroidPoints)
+    this.scene.add(this.kuiperPoints)
+    this.scene.add(this.probeGroup)
+    this.scene.add(this.constellationGroup)
 
     // --- selection marker ---
     this.marker = new THREE.Sprite(
@@ -1686,6 +1705,125 @@ export class GlobeEngine {
 
   getFocusTarget(): CelestialBodyId {
     return this.focusTarget
+  }
+
+  setAsteroidsVisible(v: boolean) {
+    if (this.asteroidPoints) this.asteroidPoints.visible = v
+    if (this.kuiperPoints) this.kuiperPoints.visible = v
+  }
+
+  setProbesVisible(v: boolean) {
+    if (this.probeGroup) this.probeGroup.visible = v
+  }
+
+  setConstellationsVisible(v: boolean) {
+    if (this.constellationGroup) this.constellationGroup.visible = v
+  }
+
+  private makeAsteroids(): THREE.Points {
+    const { mainBelt } = generateAsteroidBelts()
+    const pos = new Float32Array(mainBelt.length * 3)
+    const col = new Float32Array(mainBelt.length * 3)
+    for (let i = 0; i < mainBelt.length; i++) {
+      const a = mainBelt[i]
+      pos[i * 3] = a.x
+      pos[i * 3 + 1] = a.y
+      pos[i * 3 + 2] = a.z
+      const c = new THREE.Color(a.color)
+      col[i * 3] = c.r
+      col[i * 3 + 1] = c.g
+      col[i * 3 + 2] = c.b
+    }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
+    const mat = new THREE.PointsMaterial({
+      size: 0.35,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending,
+    })
+    return new THREE.Points(geo, mat)
+  }
+
+  private makeKuiper(): THREE.Points {
+    const { kuiperBelt } = generateAsteroidBelts()
+    const pos = new Float32Array(kuiperBelt.length * 3)
+    const col = new Float32Array(kuiperBelt.length * 3)
+    for (let i = 0; i < kuiperBelt.length; i++) {
+      const a = kuiperBelt[i]
+      pos[i * 3] = a.x
+      pos[i * 3 + 1] = a.y
+      pos[i * 3 + 2] = a.z
+      const c = new THREE.Color(a.color)
+      col[i * 3] = c.r
+      col[i * 3 + 1] = c.g
+      col[i * 3 + 2] = c.b
+    }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
+    const mat = new THREE.PointsMaterial({
+      size: 0.45,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.AdditiveBlending,
+    })
+    return new THREE.Points(geo, mat)
+  }
+
+  private makeProbes(): THREE.Group {
+    const group = new THREE.Group()
+    for (const p of DEEP_SPACE_PROBES) {
+      const px = Math.cos(p.angleRad) * p.distanceAu
+      const py = Math.sin(p.angleRad) * Math.cos(p.inclinationRad) * p.distanceAu
+      const pz = Math.sin(p.angleRad) * Math.sin(p.inclinationRad) * p.distanceAu
+
+      const geo = new THREE.SphereGeometry(0.35, 16, 16)
+      const mat = new THREE.MeshBasicMaterial({ color: 0x00f0ff })
+      const mesh = new THREE.Mesh(geo, mat)
+      mesh.position.set(px, py, pz)
+
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(px, py, pz),
+      ])
+      const lineMat = new THREE.LineDashedMaterial({
+        color: 0x00f0ff,
+        dashSize: 1,
+        gapSize: 1,
+        opacity: 0.35,
+        transparent: true,
+      })
+      const line = new THREE.Line(lineGeo, lineMat)
+      line.computeLineDistances()
+
+      group.add(mesh)
+      group.add(line)
+    }
+    return group
+  }
+
+  private makeConstellations(): THREE.Group {
+    const group = new THREE.Group()
+    for (const c of CONSTELLATIONS) {
+      const pts: THREE.Vector3[] = []
+      for (const p of c.points) {
+        pts.push(new THREE.Vector3(p[0], p[1], p[2]))
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts)
+      const mat = new THREE.LineBasicMaterial({
+        color: 0x4477aa,
+        transparent: true,
+        opacity: 0.28,
+        blending: THREE.AdditiveBlending,
+      })
+      const line = new THREE.LineSegments(geo, mat)
+      group.add(line)
+    }
+    return group
   }
 
   dispose() {
